@@ -48,5 +48,6 @@ pub(crate) enum Type {
     Semicolon,
     Star,
 
+    Bang,
     BangEqual,
 }
