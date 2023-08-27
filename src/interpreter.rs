@@ -7,65 +7,26 @@ impl Scanner {
         let mut tokens: Vec<Token> = vec![];
 
         for byte in source.as_bytes() {
-            Self::scan_token(*byte, &mut tokens);
+            let token = Self::identify_token(*byte);
+            tokens.push(token);
         }
 
         tokens
     }
 
-    fn scan_token(byte: u8, tokens: &mut Vec<Token>) {
+    fn identify_token(byte: u8) -> Token {
         match &[byte] {
-            b"(" => {
-                tokens.push(Token {
-                    r#type: Type::LeftParen,
-                });
-            }
-            b")" => {
-                tokens.push(Token {
-                    r#type: Type::RightParen,
-                });
-            }
-            b"{" => {
-                tokens.push(Token {
-                    r#type: Type::LeftBrace,
-                });
-            }
-            b"}" => {
-                tokens.push(Token {
-                    r#type: Type::RightBrace,
-                });
-            }
-            b"," => {
-                tokens.push(Token {
-                    r#type: Type::Comma,
-                });
-            }
-            b"." => {
-                tokens.push(Token {
-                    r#type: Type::Dot,
-                });
-            }
-            b"-" => {
-                tokens.push(Token {
-                    r#type: Type::Minus,
-                });
-            }
-            b"+" => {
-                tokens.push(Token {
-                    r#type: Type::Plus,
-                });
-            }
-            b";" => {
-                tokens.push(Token {
-                    r#type: Type::Semicolon,
-                });
-            }
-            b"*" => {
-                tokens.push(Token {
-                    r#type: Type::Star,
-                });
-            }
-            _ => todo!()
+            b"(" => Token { r#type: Type::LeftParen },
+            b")" => Token { r#type: Type::RightParen },
+            b"{" => Token { r#type: Type::LeftBrace },
+            b"}" => Token { r#type: Type::RightBrace },
+            b"," => Token { r#type: Type::Comma },
+            b"." => Token { r#type: Type::Dot },
+            b"-" => Token { r#type: Type::Minus },
+            b"+" => Token { r#type: Type::Plus },
+            b";" => Token { r#type: Type::Semicolon },
+            b"*" => Token { r#type: Type::Star },
+            _ => todo!(),
         }
     }
 }
@@ -156,21 +117,15 @@ mod tests {
                 Token {
                     r#type: Type::Comma
                 },
-                Token {
-                    r#type: Type::Dot
-                },
+                Token { r#type: Type::Dot },
                 Token {
                     r#type: Type::Minus
                 },
-                Token {
-                    r#type: Type::Plus
-                },
+                Token { r#type: Type::Plus },
                 Token {
                     r#type: Type::Semicolon
                 },
-                Token {
-                    r#type: Type::Star
-                },
+                Token { r#type: Type::Star },
             ],
             r#"Did not scan "(){{}},.-+;*""#
         )
