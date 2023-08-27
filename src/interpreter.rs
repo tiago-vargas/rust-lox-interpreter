@@ -46,38 +46,24 @@ impl Scanner {
             b"+" => Some(Token { r#type: Type::Plus }),
             b";" => Some(Token { r#type: Type::Semicolon }),
             b"*" => Some(Token { r#type: Type::Star }),
-            b"!" => match next_byte {
-                Some(&byte) => {
-                    match &[byte] {
-                        b"=" => Some(Token { r#type: Type::BangEqual }),
-                        b" " => Some(Token { r#type: Type::Bang }),
-                        _ => todo!("Got 1 {:?}", std::str::from_utf8(&[byte])),
-                    }
-                },
-                None => Some(Token { r#type: Type::Bang }),
-            },
-            b">" => match next_byte {
-                Some(&byte) => {
-                    match &[byte] {
-                        b"=" => Some(Token { r#type: Type::GreaterEqual }),
-                        b" " => Some(Token { r#type: Type::Greater }),
-                        _ => todo!("Got 1 {:?}", std::str::from_utf8(&[byte])),
-                    }
-                },
-                None => Some(Token { r#type: Type::Greater }),
-            },
-            b"<" => match next_byte {
-                Some(&byte) => {
-                    match &[byte] {
-                        b"=" => Some(Token { r#type: Type::LessEqual }),
-                        b" " => Some(Token { r#type: Type::Less }),
-                        _ => todo!("Got 1 {:?}", std::str::from_utf8(&[byte])),
-                    }
-                },
-                None => Some(Token { r#type: Type::Less }),
-            },
-            _ => todo!("Got 2 {:?}", std::str::from_utf8(&[byte])),
+            b"!" => decide_token(Type::Bang, Type::BangEqual, next_byte),
+            b">" => decide_token(Type::Greater, Type::GreaterEqual, next_byte),
+            b"<" => decide_token(Type::Less, Type::LessEqual, next_byte),
+            _ => todo!("Got {:#?}", std::str::from_utf8(&[byte])),
         }
+    }
+}
+
+fn decide_token(simple_type: Type, compound_type: Type, next_byte: Option<&u8>) -> Option<Token> {
+    // NOTE: Not generalized for any two tokens
+    match next_byte {
+        Some(&byte) => {
+            match &[byte] {
+                b"=" => Some(Token { r#type: compound_type }),
+                _ => Some(Token { r#type: simple_type }),
+            }
+        },
+        None => Some(Token { r#type: simple_type }),
     }
 }
 
