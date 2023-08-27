@@ -66,34 +66,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn scans_right_paren() {
-        let code = "(";
-
-        let tokens = Scanner::scan_tokens(code);
-
-        assert_eq!(
-            tokens,
-            &[Token {
-                r#type: Type::LeftParen
-            }]
-        )
-    }
-
-    #[test]
-    fn scans_left_paren() {
-        let code = ")";
-
-        let tokens = Scanner::scan_tokens(code);
-
-        assert_eq!(
-            tokens,
-            &[Token {
-                r#type: Type::RightParen
-            }]
-        )
-    }
-
-    #[test]
     fn scans_simple_unnambiguous_tokens() {
         let code = "(){},.-+;*";
 
