@@ -16,6 +16,25 @@ impl Debug for Token {
     }
 }
 
+impl Token {
+    pub fn is_compound(&self) -> bool {
+        match self.r#type {
+            Type::LeftParen
+            | Type::RightParen
+            | Type::LeftBrace
+            | Type::RightBrace
+            | Type::Comma
+            | Type::Dot
+            | Type::Minus
+            | Type::Plus
+            | Type::Semicolon
+            | Type::Star => false,
+
+            _ => true,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub(crate) enum Type {
     LeftParen,
@@ -28,4 +47,6 @@ pub(crate) enum Type {
     Plus,
     Semicolon,
     Star,
+
+    BangEqual,
 }
