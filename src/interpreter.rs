@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 struct Scanner;
 
 impl Scanner {
@@ -8,7 +10,6 @@ impl Scanner {
     }
 }
 
-#[derive(Debug)]
 struct Token {
     r#type: Type,
 }
@@ -16,6 +17,12 @@ struct Token {
 impl PartialEq for Token {
     fn eq(&self, other: &Self) -> bool {
         self.r#type == other.r#type
+    }
+}
+
+impl Debug for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "«{:?}»", self.r#type)
     }
 }
 
