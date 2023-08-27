@@ -56,6 +56,26 @@ impl Scanner {
                 },
                 None => Some(Token { r#type: Type::Bang }),
             },
+            b">" => match next_byte {
+                Some(&byte) => {
+                    match &[byte] {
+                        b"=" => Some(Token { r#type: Type::GreaterEqual }),
+                        b" " => Some(Token { r#type: Type::Greater }),
+                        _ => todo!("Got 1 {:?}", std::str::from_utf8(&[byte])),
+                    }
+                },
+                None => Some(Token { r#type: Type::Greater }),
+            },
+            b"<" => match next_byte {
+                Some(&byte) => {
+                    match &[byte] {
+                        b"=" => Some(Token { r#type: Type::LessEqual }),
+                        b" " => Some(Token { r#type: Type::Less }),
+                        _ => todo!("Got 1 {:?}", std::str::from_utf8(&[byte])),
+                    }
+                },
+                None => Some(Token { r#type: Type::Less }),
+            },
             _ => todo!("Got 2 {:?}", std::str::from_utf8(&[byte])),
         }
     }
@@ -91,7 +111,7 @@ mod tests {
 
     #[test]
     fn scans_ambiguous_tokens() {
-        let code = "!= !";
+        let code = "!= ! > >= < <=";
 
         let tokens = Scanner::scan_tokens(code);
 
@@ -100,7 +120,12 @@ mod tests {
             &[
                 Token { r#type: Type::BangEqual },
                 Token { r#type: Type::Bang },
+                Token { r#type: Type::Greater },
+                Token { r#type: Type::GreaterEqual },
+                Token { r#type: Type::Less },
+                Token { r#type: Type::LessEqual },
             ],
+            r#"Did not scan "!= ! > >= < <=""#
         )
     }
 }
