@@ -17,12 +17,12 @@ impl Scanner {
         match &[byte] {
             b"(" => {
                 tokens.push(Token {
-                    r#type: Type::OpenParen,
+                    r#type: Type::LeftParen,
                 });
             }
             b")" => {
                 tokens.push(Token {
-                    r#type: Type::CloseParen,
+                    r#type: Type::RightParen,
                 });
             }
             _ => todo!()
@@ -48,8 +48,8 @@ impl Debug for Token {
 
 #[derive(Debug, PartialEq)]
 enum Type {
-    OpenParen,
-    CloseParen,
+    LeftParen,
+    RightParen,
 }
 
 #[cfg(test)]
@@ -57,7 +57,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn scans_open_paren() {
+    fn scans_right_paren() {
         let code = "(";
 
         let tokens = Scanner::scan_tokens(code);
@@ -65,13 +65,13 @@ mod tests {
         assert_eq!(
             tokens,
             &[Token {
-                r#type: Type::OpenParen
+                r#type: Type::LeftParen
             }]
         )
     }
 
     #[test]
-    fn scans_close_paren() {
+    fn scans_left_paren() {
         let code = ")";
 
         let tokens = Scanner::scan_tokens(code);
@@ -79,7 +79,7 @@ mod tests {
         assert_eq!(
             tokens,
             &[Token {
-                r#type: Type::CloseParen
+                r#type: Type::RightParen
             }]
         )
     }
