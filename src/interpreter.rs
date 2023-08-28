@@ -56,30 +56,21 @@ impl Scanner {
             b"+" => Token { r#type: Type::Plus },
             b";" => Token { r#type: Type::Semicolon },
             b"*" => Token { r#type: Type::Star },
-            b"!" => decide_token(Type::Bang, Type::BangEqual, next_byte),
-            b"=" => decide_token(Type::Equal, Type::EqualEqual, next_byte),
-            b">" => decide_token(Type::Greater, Type::GreaterEqual, next_byte),
-            b"<" => decide_token(Type::Less, Type::LessEqual, next_byte),
-            b"/" => match next_byte {
-                Some(&byte) => {
-                    match &[byte] {
-                        b"/" => Token { r#type: Type::SlashSlash },
-                        _ => Token { r#type: Type::Slash },
-                    }
-                },
-                None => Token { r#type: Type::Slash },
-            },
+            b"!" => decide_token(Type::Bang, (Type::BangEqual, b"="), next_byte),
+            b"=" => decide_token(Type::Equal, (Type::EqualEqual, b"="), next_byte),
+            b">" => decide_token(Type::Greater, (Type::GreaterEqual, b"="), next_byte),
+            b"<" => decide_token(Type::Less, (Type::LessEqual, b"="), next_byte),
+            b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
             _ => todo!("Got {:#?}", std::str::from_utf8(&[byte])),
         }
     }
 }
 
-fn decide_token(simple_type: Type, compound_type: Type, next_byte: Option<&u8>) -> Token {
-    // NOTE: Not generalized for any two tokens
+fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Token {
     match next_byte {
         Some(&byte) => {
-            match &[byte] {
-                b"=" => Token { r#type: compound_type },
+            match byte {
+                b if compound_type.1 == &[b] => Token { r#type: compound_type.0 },
                 _ => Token { r#type: simple_type },
             }
         },
