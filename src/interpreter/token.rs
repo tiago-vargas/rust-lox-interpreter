@@ -50,6 +50,8 @@ pub(crate) enum Type {
 
     Bang,
     BangEqual,
+    Equal,
+    EqualEqual,
     Greater,
     GreaterEqual,
     Less,

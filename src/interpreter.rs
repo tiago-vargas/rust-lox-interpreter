@@ -47,6 +47,7 @@ impl Scanner {
             b";" => Some(Token { r#type: Type::Semicolon }),
             b"*" => Some(Token { r#type: Type::Star }),
             b"!" => decide_token(Type::Bang, Type::BangEqual, next_byte),
+            b"=" => decide_token(Type::Equal, Type::EqualEqual, next_byte),
             b">" => decide_token(Type::Greater, Type::GreaterEqual, next_byte),
             b"<" => decide_token(Type::Less, Type::LessEqual, next_byte),
             _ => todo!("Got {:#?}", std::str::from_utf8(&[byte])),
@@ -97,7 +98,7 @@ mod tests {
 
     #[test]
     fn scans_ambiguous_tokens() {
-        let code = "!= ! > >= < <=";
+        let code = "!= ! == = > >= < <=";
 
         let tokens = Scanner::scan_tokens(code);
 
@@ -106,12 +107,14 @@ mod tests {
             &[
                 Token { r#type: Type::BangEqual },
                 Token { r#type: Type::Bang },
+                Token { r#type: Type::EqualEqual },
+                Token { r#type: Type::Equal },
                 Token { r#type: Type::Greater },
                 Token { r#type: Type::GreaterEqual },
                 Token { r#type: Type::Less },
                 Token { r#type: Type::LessEqual },
             ],
-            r#"Did not scan "!= ! > >= < <=""#
+            r#"Did not scan "!= ! == = > >= < <=""#
         )
     }
 }
