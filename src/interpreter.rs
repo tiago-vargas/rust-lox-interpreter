@@ -170,4 +170,25 @@ mod tests {
             ],
         )
     }
+
+    #[test]
+    fn scans_line_after_comment() {
+        let code = r#"
+            + -
+            // This is a comment!
+            - +
+            "#;
+
+        let tokens = Scanner::scan_tokens(code);
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Plus },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::Plus },
+            ],
+        )
+    }
 }
