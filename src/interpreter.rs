@@ -61,7 +61,7 @@ impl Scanner {
             b">" => decide_token(Type::Greater, (Type::GreaterEqual, b"="), next_byte),
             b"<" => decide_token(Type::Less, (Type::LessEqual, b"="), next_byte),
             b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
-            _ => todo!("Got {:#?}", std::str::from_utf8(&[byte])),
+            _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
     }
 }
