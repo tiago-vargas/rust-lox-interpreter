@@ -8,17 +8,17 @@ impl Scanner {
     fn scan_tokens(source: &str) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
 
-        let mut should_skip = false;
+        let mut should_skip_iteration = false;
         let mut should_skip_line = false;
         for (i, byte) in source.as_bytes().iter().enumerate() {
-            if should_skip {
-                should_skip = false;
+            if should_skip_iteration {
+                should_skip_iteration = false;
                 continue;
             }
 
             if should_skip_line {
                 if &[*byte] != b"\n" {
-                    should_skip = true;
+                    should_skip_iteration = true;
                     continue;
                 }
                 should_skip_line = false;
@@ -32,7 +32,7 @@ impl Scanner {
                 Token { r#type: Type::SlashSlash } => should_skip_line = true,
                 token => {
                     if token.is_compound() {
-                        should_skip = true;
+                        should_skip_iteration = true;
                     }
                     tokens.push(token);
                 }
