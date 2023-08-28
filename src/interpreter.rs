@@ -28,14 +28,14 @@ impl Scanner {
             let token = Self::identify_token(*byte, next_byte);
 
             match token {
-                Some(Token { r#type: Type::SlashSlash }) => should_skip_line = true,
-                Some(token) => {
+                Token { r#type: Type::Space } => continue,
+                Token { r#type: Type::SlashSlash } => should_skip_line = true,
+                token => {
                     if token.is_compound() {
                         should_skip = true;
                     }
                     tokens.push(token);
                 }
-                None => continue,
             }
 
         }
@@ -43,19 +43,19 @@ impl Scanner {
         tokens
     }
 
-    fn identify_token(byte: u8, next_byte: Option<&u8>) -> Option<Token> {
+    fn identify_token(byte: u8, next_byte: Option<&u8>) -> Token {
         match &[byte] {
-            b" " => None,
-            b"(" => Some(Token { r#type: Type::LeftParen }),
-            b")" => Some(Token { r#type: Type::RightParen }),
-            b"{" => Some(Token { r#type: Type::LeftBrace }),
-            b"}" => Some(Token { r#type: Type::RightBrace }),
-            b"," => Some(Token { r#type: Type::Comma }),
-            b"." => Some(Token { r#type: Type::Dot }),
-            b"-" => Some(Token { r#type: Type::Minus }),
-            b"+" => Some(Token { r#type: Type::Plus }),
-            b";" => Some(Token { r#type: Type::Semicolon }),
-            b"*" => Some(Token { r#type: Type::Star }),
+            b" " => Token { r#type: Type::Space },
+            b"(" => Token { r#type: Type::LeftParen },
+            b")" => Token { r#type: Type::RightParen },
+            b"{" => Token { r#type: Type::LeftBrace },
+            b"}" => Token { r#type: Type::RightBrace },
+            b"," => Token { r#type: Type::Comma },
+            b"." => Token { r#type: Type::Dot },
+            b"-" => Token { r#type: Type::Minus },
+            b"+" => Token { r#type: Type::Plus },
+            b";" => Token { r#type: Type::Semicolon },
+            b"*" => Token { r#type: Type::Star },
             b"!" => decide_token(Type::Bang, Type::BangEqual, next_byte),
             b"=" => decide_token(Type::Equal, Type::EqualEqual, next_byte),
             b">" => decide_token(Type::Greater, Type::GreaterEqual, next_byte),
@@ -63,27 +63,27 @@ impl Scanner {
             b"/" => match next_byte {
                 Some(&byte) => {
                     match &[byte] {
-                        b"/" => Some(Token { r#type: Type::SlashSlash }),
-                        _ => Some(Token { r#type: Type::Slash }),
+                        b"/" => Token { r#type: Type::SlashSlash },
+                        _ => Token { r#type: Type::Slash },
                     }
                 },
-                None => Some(Token { r#type: Type::Slash }),
+                None => Token { r#type: Type::Slash },
             },
             _ => todo!("Got {:#?}", std::str::from_utf8(&[byte])),
         }
     }
 }
 
-fn decide_token(simple_type: Type, compound_type: Type, next_byte: Option<&u8>) -> Option<Token> {
+fn decide_token(simple_type: Type, compound_type: Type, next_byte: Option<&u8>) -> Token {
     // NOTE: Not generalized for any two tokens
     match next_byte {
         Some(&byte) => {
             match &[byte] {
-                b"=" => Some(Token { r#type: compound_type }),
-                _ => Some(Token { r#type: simple_type }),
+                b"=" => Token { r#type: compound_type },
+                _ => Token { r#type: simple_type },
             }
         },
-        None => Some(Token { r#type: simple_type }),
+        None => Token { r#type: simple_type },
     }
 }
 
