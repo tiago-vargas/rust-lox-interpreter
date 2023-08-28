@@ -56,4 +56,7 @@ pub(crate) enum Type {
     GreaterEqual,
     Less,
     LessEqual,
+
+    Slash,
+    SlashSlash,  // Only for internal use
 }

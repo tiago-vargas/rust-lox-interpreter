@@ -9,16 +9,26 @@ impl Scanner {
         let mut tokens: Vec<Token> = vec![];
 
         let mut should_skip = false;
+        let mut should_skip_line = false;
         for (i, byte) in source.as_bytes().iter().enumerate() {
             if should_skip {
                 should_skip = false;
                 continue;
             }
 
+            if should_skip_line {
+                if &[*byte] != b"\n" {
+                    should_skip = true;
+                    continue;
+                }
+                should_skip_line = false;
+            }
+
             let next_byte = source.as_bytes().get(i + 1);
             let token = Self::identify_token(*byte, next_byte);
 
             match token {
+                Some(Token { r#type: Type::SlashSlash }) => should_skip_line = true,
                 Some(token) => {
                     if token.is_compound() {
                         should_skip = true;
@@ -50,6 +60,15 @@ impl Scanner {
             b"=" => decide_token(Type::Equal, Type::EqualEqual, next_byte),
             b">" => decide_token(Type::Greater, Type::GreaterEqual, next_byte),
             b"<" => decide_token(Type::Less, Type::LessEqual, next_byte),
+            b"/" => match next_byte {
+                Some(&byte) => {
+                    match &[byte] {
+                        b"/" => Some(Token { r#type: Type::SlashSlash }),
+                        _ => Some(Token { r#type: Type::Slash }),
+                    }
+                },
+                None => Some(Token { r#type: Type::Slash }),
+            },
             _ => todo!("Got {:#?}", std::str::from_utf8(&[byte])),
         }
     }
@@ -115,6 +134,25 @@ mod tests {
                 Token { r#type: Type::LessEqual },
             ],
             r#"Did not scan "!= ! == = > >= < <=""#
+        )
+    }
+
+    #[test]
+    fn scans_ambiguous_tokens_with_comment() {
+        let code = "+ - * / =   // This is a comment! != > etc";
+
+        let tokens = Scanner::scan_tokens(code);
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Plus },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::Star },
+                Token { r#type: Type::Slash },
+                Token { r#type: Type::Equal },
+            ],
+            r#"Did not scan "!= ! > >= < <=""#
         )
     }
 }
