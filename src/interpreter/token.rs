@@ -59,5 +59,5 @@ pub(crate) enum Type {
 
     Slash,
     SlashSlash,  // Only for internal use
-    Space,  // Only for internal use
+    Whitespace,  // Only for internal use
 }

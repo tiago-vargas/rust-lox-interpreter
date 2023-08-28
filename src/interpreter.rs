@@ -28,7 +28,7 @@ impl Scanner {
             let token = Self::identify_token(*byte, next_byte);
 
             match token {
-                Token { r#type: Type::Space } => continue,
+                Token { r#type: Type::Whitespace } => continue,
                 Token { r#type: Type::SlashSlash } => should_skip_line = true,
                 token => {
                     if token.is_compound() {
@@ -45,7 +45,10 @@ impl Scanner {
 
     fn identify_token(byte: u8, next_byte: Option<&u8>) -> Token {
         match &[byte] {
-            b" " => Token { r#type: Type::Space },
+            b" "
+            | b"\t"
+            | b"\r"
+            | b"\n" => Token { r#type: Type::Whitespace },
             b"(" => Token { r#type: Type::LeftParen },
             b")" => Token { r#type: Type::RightParen },
             b"{" => Token { r#type: Type::LeftBrace },
@@ -144,6 +147,27 @@ mod tests {
                 Token { r#type: Type::Equal },
             ],
             r#"Did not scan "!= ! > >= < <=""#
+        )
+    }
+
+    #[test]
+    fn ignores_whitespace() {
+        let code = r#"
+            + - * / =
+            // This is a comment! != > etc
+            "#;
+
+        let tokens = Scanner::scan_tokens(code);
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Plus },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::Star },
+                Token { r#type: Type::Slash },
+                Token { r#type: Type::Equal },
+            ],
         )
     }
 }
