@@ -43,12 +43,6 @@ impl Scanner<'_> {
         tokens
     }
 
-    fn skip_current_line(&mut self) {
-        while &[self.source.as_bytes()[self.position]] != b"\n" && self.position < self.source.len() - 1 {
-            self.position += 1;
-        }
-    }
-
     fn identify_token(&mut self, byte: u8, next_byte: Option<&u8>) -> Type {
         match &[byte] {
             b" "
@@ -58,9 +52,7 @@ impl Scanner<'_> {
             b"\"" => {
                 self.position += 1;
                 let start = self.position;
-                while &[self.source.as_bytes()[self.position]] != b"\"" && self.position < self.source.len() - 1 {
-                    self.position += 1;
-                }
+                self.advance_until_find_any(&[b"\""]);
                 let end = self.position;
                 let s = String::from_utf8(self.source.as_bytes()[start..end].to_vec());
                 let s = s.unwrap_or("".to_string());
@@ -83,15 +75,23 @@ impl Scanner<'_> {
             b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
             digit if byte.is_ascii_digit() => {
                 let start = self.position;
-                while (&[self.source.as_bytes()[self.position]] != b" " || &[self.source.as_bytes()[self.position]] != b"\n") && self.position < self.source.len() - 1 {
-                    self.position += 1;
-                }
+                self.advance_until_find_any(&[b" ", b"\n"]);
                 self.position += 1;
                 let end = self.position;
                 let n = std::str::from_utf8(&self.source.as_bytes()[start..end]).unwrap().parse::<i32>().unwrap();
                 Type::Number(n)
             }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
+        }
+    }
+
+    fn skip_current_line(&mut self) {
+        self.advance_until_find_any(&[b"\n"]);
+    }
+
+    fn advance_until_find_any(&mut self, bytes: &[&[u8; 1]]) {
+        while !bytes.contains(&&[self.source.as_bytes()[self.position]]) && self.position < self.source.len() - 1 {
+            self.position += 1;
         }
     }
 }
