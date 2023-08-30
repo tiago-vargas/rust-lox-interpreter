@@ -25,7 +25,8 @@ impl Scanner {
             }
 
             let next_byte = source.as_bytes().get(i + 1);
-            let token = Self::identify_token(*byte, next_byte);
+            let r#type = Self::identify_token(*byte, next_byte);
+            let token = Token { r#type };
 
             match token {
                 Token { r#type: Type::Whitespace } => continue,
@@ -43,22 +44,22 @@ impl Scanner {
         tokens
     }
 
-    fn identify_token(byte: u8, next_byte: Option<&u8>) -> Token {
+    fn identify_token(byte: u8, next_byte: Option<&u8>) -> Type {
         match &[byte] {
             b" "
             | b"\t"
             | b"\r"
-            | b"\n" => Token { r#type: Type::Whitespace },
-            b"(" => Token { r#type: Type::LeftParen },
-            b")" => Token { r#type: Type::RightParen },
-            b"{" => Token { r#type: Type::LeftBrace },
-            b"}" => Token { r#type: Type::RightBrace },
-            b"," => Token { r#type: Type::Comma },
-            b"." => Token { r#type: Type::Dot },
-            b"-" => Token { r#type: Type::Minus },
-            b"+" => Token { r#type: Type::Plus },
-            b";" => Token { r#type: Type::Semicolon },
-            b"*" => Token { r#type: Type::Star },
+            | b"\n" => Type::Whitespace,
+            b"(" => Type::LeftParen,
+            b")" => Type::RightParen,
+            b"{" => Type::LeftBrace,
+            b"}" => Type::RightBrace,
+            b"," => Type::Comma,
+            b"." => Type::Dot,
+            b"-" => Type::Minus,
+            b"+" => Type::Plus,
+            b";" => Type::Semicolon,
+            b"*" => Type::Star,
             b"!" => decide_token(Type::Bang, (Type::BangEqual, b"="), next_byte),
             b"=" => decide_token(Type::Equal, (Type::EqualEqual, b"="), next_byte),
             b">" => decide_token(Type::Greater, (Type::GreaterEqual, b"="), next_byte),
@@ -69,15 +70,15 @@ impl Scanner {
     }
 }
 
-fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Token {
+fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Type {
     match next_byte {
         Some(&byte) => {
             match byte {
-                b if compound_type.1 == &[b] => Token { r#type: compound_type.0 },
-                _ => Token { r#type: simple_type },
+                b if compound_type.1 == &[b] => compound_type.0,
+                _ => simple_type,
             }
         },
-        None => Token { r#type: simple_type },
+        None => simple_type,
     }
 }
 
