@@ -54,9 +54,9 @@ impl Scanner<'_> {
             | b"\r"
             | b"\n" => Type::Whitespace,
             b"\"" => {
-                self.advance();
+                self.advance();  // Skips the initial `"`
                 let start = self.position;
-                self.advance_until_find_any(&[b"\""]);
+                self.advance_until_find_any(&[b"\""]);  // Finds the final `"`
                 let end = self.position;
                 let s = String::from_utf8(self.source.as_bytes()[start..end].to_vec());
                 let s = s.unwrap_or("".to_string());
