@@ -19,7 +19,7 @@ impl Scanner<'_> {
             let byte = self.source.as_bytes()[self.position];
 
             let next_byte = self.source.as_bytes().get(self.position + 1);
-            let r#type = Self::identify_token(byte, next_byte);
+            let r#type = self.identify_token(byte, next_byte);
             let token = Token { r#type };
 
             match token {
@@ -49,12 +49,23 @@ impl Scanner<'_> {
         }
     }
 
-    fn identify_token(byte: u8, next_byte: Option<&u8>) -> Type {
+    fn identify_token(&mut self, byte: u8, next_byte: Option<&u8>) -> Type {
         match &[byte] {
             b" "
             | b"\t"
             | b"\r"
             | b"\n" => Type::Whitespace,
+            b"\"" => {
+                self.position += 1;
+                let start = self.position;
+                while &[self.source.as_bytes()[self.position]] != b"\"" && self.position < self.source.len() - 1 {
+                    self.position += 1;
+                }
+                let end = self.position;
+                let s = String::from_utf8(self.source.as_bytes()[start..end].to_vec());
+                let s = s.unwrap_or("".to_string());
+                Type::String(s)
+            }
             b"(" => Type::LeftParen,
             b")" => Type::RightParen,
             b"{" => Type::LeftBrace,
@@ -192,6 +203,38 @@ mod tests {
             &[
                 Token { r#type: Type::Plus },
                 Token { r#type: Type::Minus },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::Plus },
+            ],
+        )
+    }
+
+    #[test]
+    fn scans_lone_strings() {
+        let code = r#""This is a string!""#;
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::String("This is a string!".to_string()) },
+            ],
+        )
+    }
+
+    #[test]
+    fn scans_strings() {
+        let code = r#"+ - "This is a string!" - +"#;
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Plus },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::String("This is a string!".to_string()) },
                 Token { r#type: Type::Minus },
                 Token { r#type: Type::Plus },
             ],
