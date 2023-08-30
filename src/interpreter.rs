@@ -15,17 +15,8 @@ impl Scanner<'_> {
     fn scan_tokens(&mut self) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
 
-        let mut should_skip_line = false;
         while self.position < self.source.len() {
             let byte = self.source.as_bytes()[self.position];
-
-            if should_skip_line {
-                if &[byte] != b"\n" {
-                    self.position += 1;
-                    continue;
-                }
-                should_skip_line = false;
-            }
 
             let next_byte = self.source.as_bytes().get(self.position + 1);
             let r#type = Self::identify_token(byte, next_byte);
@@ -36,7 +27,9 @@ impl Scanner<'_> {
                     self.position += 1;
                     continue;
                 },
-                Token { r#type: Type::SlashSlash } => should_skip_line = true,
+                Token { r#type: Type::SlashSlash } => {
+                    self.skip_current_line();
+                },
                 token => {
                     if token.is_compound() {
                         self.position += 1;
@@ -48,6 +41,12 @@ impl Scanner<'_> {
         }
 
         tokens
+    }
+
+    fn skip_current_line(&mut self) {
+        while &[self.source.as_bytes()[self.position]] != b"\n" && self.position < self.source.len() - 1 {
+            self.position += 1;
+        }
     }
 
     fn identify_token(byte: u8, next_byte: Option<&u8>) -> Type {
