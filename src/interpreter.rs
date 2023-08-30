@@ -15,7 +15,7 @@ impl Scanner {
         let mut tokens: Vec<Token> = vec![];
 
         let mut should_skip_line = false;
-        while self.position < source.as_bytes().len() {
+        while self.position < source.len() {
             let byte = source.as_bytes()[self.position];
 
             if should_skip_line {
