@@ -2,38 +2,43 @@ mod token;
 
 use self::token::{Token, Type};
 
-struct Scanner;
+struct Scanner {
+    position: usize,
+}
 
 impl Scanner {
-    fn scan_tokens(source: &str) -> Vec<Token> {
+    fn new() -> Scanner {
+        Scanner { position: 0 }
+    }
+
+    fn scan_tokens(&mut self, source: &str) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
 
         let mut should_skip_iteration = false;
         let mut should_skip_line = false;
-        let mut position = 0;
-        while position < source.as_bytes().len() {
-            let byte = source.as_bytes()[position];
+        while self.position < source.as_bytes().len() {
+            let byte = source.as_bytes()[self.position];
             if should_skip_iteration {
                 should_skip_iteration = false;
-                position += 1;
+                self.position += 1;
                 continue;
             }
 
             if should_skip_line {
                 if &[byte] != b"\n" {
-                    position += 1;
+                    self.position += 1;
                     continue;
                 }
                 should_skip_line = false;
             }
 
-            let next_byte = source.as_bytes().get(position + 1);
+            let next_byte = source.as_bytes().get(self.position + 1);
             let r#type = Self::identify_token(byte, next_byte);
             let token = Token { r#type };
 
             match token {
                 Token { r#type: Type::Whitespace } => {
-                    position += 1;
+                    self.position += 1;
                     continue;
                 },
                 Token { r#type: Type::SlashSlash } => should_skip_line = true,
@@ -44,7 +49,7 @@ impl Scanner {
                     tokens.push(token);
                 }
             }
-            position += 1;
+            self.position += 1;
         }
 
         tokens
@@ -96,7 +101,7 @@ mod tests {
     fn scans_simple_unnambiguous_tokens() {
         let code = "(){},.-+;*";
 
-        let tokens = Scanner::scan_tokens(code);
+        let tokens = Scanner::new().scan_tokens(code);
 
         assert_eq!(
             tokens,
@@ -120,7 +125,7 @@ mod tests {
     fn scans_ambiguous_tokens() {
         let code = "!= ! == = > >= < <=";
 
-        let tokens = Scanner::scan_tokens(code);
+        let tokens = Scanner::new().scan_tokens(code);
 
         assert_eq!(
             tokens,
@@ -142,7 +147,7 @@ mod tests {
     fn scans_ambiguous_tokens_with_comment() {
         let code = "+ - * / =   // This is a comment! != > etc";
 
-        let tokens = Scanner::scan_tokens(code);
+        let tokens = Scanner::new().scan_tokens(code);
 
         assert_eq!(
             tokens,
@@ -164,7 +169,7 @@ mod tests {
             // This is a comment! != > etc
             "#;
 
-        let tokens = Scanner::scan_tokens(code);
+        let tokens = Scanner::new().scan_tokens(code);
 
         assert_eq!(
             tokens,
@@ -186,7 +191,7 @@ mod tests {
             - +
             "#;
 
-        let tokens = Scanner::scan_tokens(code);
+        let tokens = Scanner::new().scan_tokens(code);
 
         assert_eq!(
             tokens,
