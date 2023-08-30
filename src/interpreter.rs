@@ -240,4 +240,25 @@ mod tests {
             ],
         )
     }
+
+    #[test]
+    fn scans_multiline_strings() {
+        let code = r#"
+        + - "This is a string!
+        And it is still going!"
+        - +"#;
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Plus },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::String("This is a string!\n        And it is still going!".to_string()) },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::Plus },
+            ],
+        )
+    }
 }
