@@ -62,4 +62,5 @@ pub(crate) enum Type {
     Whitespace,  // Only for internal use
 
     String(String),
+    Number(i32),
 }

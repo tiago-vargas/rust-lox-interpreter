@@ -81,6 +81,16 @@ impl Scanner<'_> {
             b">" => decide_token(Type::Greater, (Type::GreaterEqual, b"="), next_byte),
             b"<" => decide_token(Type::Less, (Type::LessEqual, b"="), next_byte),
             b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
+            digit if byte.is_ascii_digit() => {
+                let start = self.position;
+                while (&[self.source.as_bytes()[self.position]] != b" " || &[self.source.as_bytes()[self.position]] != b"\n") && self.position < self.source.len() - 1 {
+                    self.position += 1;
+                }
+                self.position += 1;
+                let end = self.position;
+                let n = std::str::from_utf8(&self.source.as_bytes()[start..end]).unwrap().parse::<i32>().unwrap();
+                Type::Number(n)
+            }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
     }
@@ -258,6 +268,20 @@ mod tests {
                 Token { r#type: Type::String("This is a string!\n        And it is still going!".to_string()) },
                 Token { r#type: Type::Minus },
                 Token { r#type: Type::Plus },
+            ],
+        )
+    }
+
+    #[test]
+    fn scans_lone_integers() {
+        let code = "123";
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Number(123) },
             ],
         )
     }
