@@ -31,7 +31,8 @@ impl Token {
             | Type::Bang
             | Type::Greater
             | Type::Less
-            | Type::StringLiteral(_) => false,  // Not exactly...
+            | Type::StringLiteral(_)            // Not exactly...
+            | Type::NumberLiteral(_) => false,  // Not exactly...
 
             _ => true,
         }
@@ -65,8 +66,15 @@ pub(crate) enum Type {
     Whitespace,  // Only for internal use
 
     StringLiteral(String),
+    NumberLiteral(Literal),
 
     Error(Error),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Literal {
+    Integer(i32),
+    Float(f64),
 }
 
 #[derive(Debug, PartialEq)]

@@ -1,6 +1,6 @@
 mod token;
 
-use std::ops::RangeInclusive;
+use std::ops::{Range, RangeInclusive};
 
 use token::{Token, Type};
 
@@ -98,6 +98,17 @@ impl Scanner<'_> {
             b">" => decide_token_type(Greater, (GreaterEqual, b"="), self.next_byte()),
             b"<" => decide_token_type(Less, (LessEqual, b"="), self.next_byte()),
             b"/" => decide_token_type(Slash, (SlashSlash, b"/"), self.next_byte()),
+            [digit] if digit.is_ascii_digit() => {
+                let (is_f64, range) = self.measure_number();
+                let number = std::str::from_utf8(&self.source.as_bytes()[range]);
+                if is_f64 {
+                    let n = number.unwrap().parse::<f64>().unwrap();
+                    Type::NumberLiteral(token::Literal::Float(n))
+                } else {
+                    let n = number.unwrap().parse::<i32>().unwrap();
+                    Type::NumberLiteral(token::Literal::Integer(n))
+                }
+            }
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
         }
     }
@@ -116,6 +127,27 @@ impl Scanner<'_> {
         let end_inclusive = self.position;  // Also includes the final `"`
 
         start+1..=end_inclusive-1  // Trims both quotes
+    }
+
+    fn measure_number(&mut self) -> (bool, Range<usize>) {
+        let mut is_float = false;
+        let start = self.position;
+        self.advance_until_not_ascii_digit();
+        if !self.is_at_end() && &[self.current_byte()] == b"." {
+            self.advance();
+            self.advance_until_not_ascii_digit();
+            is_float = true;
+        }
+        let end_exclusive = self.position;
+        let range = start..end_exclusive;
+
+        (is_float, range)
+    }
+
+    fn advance_until_not_ascii_digit(&mut self) {
+        while !self.is_at_end() && self.current_byte().is_ascii_digit() {
+            self.advance();
+        }
     }
 }
 
@@ -136,6 +168,8 @@ fn decide_token_type(simple_type: Type, compound_type: (Type, &[u8]), next_byte:
 #[cfg(test)]
 mod tests {
     use super::token::Type::*;
+    use crate::interpreter::token::Literal;
+
     use super::*;
 
     #[test]
@@ -335,6 +369,78 @@ mod tests {
                     Token { r#type: Plus },
                     Token { r#type: Minus },
                     Token { r#type: Error(token::Error::UnterminatedString) },
+                ],
+            )
+        }
+    }
+
+    mod integers {
+        use super::*;
+
+        #[test]
+        fn scans_lone_integers() {
+            let code = "123";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Type::NumberLiteral(Literal::Integer(123)) },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_integers() {
+            let code = "0 + 123 - 1";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Type::NumberLiteral(Literal::Integer(0)) },
+                    Token { r#type: Type::Plus },
+                    Token { r#type: Type::NumberLiteral(Literal::Integer(123)) },
+                    Token { r#type: Type::Minus },
+                    Token { r#type: Type::NumberLiteral(Literal::Integer(1)) },
+                ],
+            )
+        }
+    }
+
+    mod floats {
+        use super::*;
+
+        #[test]
+        fn scans_lone_floats() {
+            let code = "12.3";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Type::NumberLiteral(Literal::Float(12.3)) },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_floats() {
+            let code = "0 + 12.3 / 5";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: NumberLiteral(Literal::Integer(0)) },
+                    Token { r#type: Plus },
+                    Token { r#type: NumberLiteral(Literal::Float(12.3)) },
+                    Token { r#type: Slash },
+                    Token { r#type: NumberLiteral(Literal::Integer(5)) },
                 ],
             )
         }
