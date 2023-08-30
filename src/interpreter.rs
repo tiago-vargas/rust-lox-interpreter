@@ -10,26 +10,32 @@ impl Scanner {
 
         let mut should_skip_iteration = false;
         let mut should_skip_line = false;
-        for (i, byte) in source.as_bytes().iter().enumerate() {
+        let mut position = 0;
+        while position < source.as_bytes().len() {
+            let byte = source.as_bytes()[position];
             if should_skip_iteration {
                 should_skip_iteration = false;
+                position += 1;
                 continue;
             }
 
             if should_skip_line {
-                if &[*byte] != b"\n" {
-                    should_skip_iteration = true;
+                if &[byte] != b"\n" {
+                    position += 1;
                     continue;
                 }
                 should_skip_line = false;
             }
 
-            let next_byte = source.as_bytes().get(i + 1);
-            let r#type = Self::identify_token(*byte, next_byte);
+            let next_byte = source.as_bytes().get(position + 1);
+            let r#type = Self::identify_token(byte, next_byte);
             let token = Token { r#type };
 
             match token {
-                Token { r#type: Type::Whitespace } => continue,
+                Token { r#type: Type::Whitespace } => {
+                    position += 1;
+                    continue;
+                },
                 Token { r#type: Type::SlashSlash } => should_skip_line = true,
                 token => {
                     if token.is_compound() {
@@ -38,7 +44,7 @@ impl Scanner {
                     tokens.push(token);
                 }
             }
-
+            position += 1;
         }
 
         tokens
