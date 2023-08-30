@@ -153,7 +153,7 @@ mod tests {
                 Token { r#type: Type::Slash },
                 Token { r#type: Type::Equal },
             ],
-            r#"Did not scan "!= ! > >= < <=""#
+            r#"+ - * / =   // This is a comment! != > etc"#
         )
     }
 
