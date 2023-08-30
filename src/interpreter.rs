@@ -2,21 +2,22 @@ mod token;
 
 use self::token::{Token, Type};
 
-struct Scanner {
+struct Scanner<'a> {
+    source: &'a str,
     position: usize,
 }
 
-impl Scanner {
-    fn new() -> Scanner {
-        Scanner { position: 0 }
+impl Scanner<'_> {
+    fn new(source: &str) -> Scanner {
+        Scanner { source, position: 0 }
     }
 
-    fn scan_tokens(&mut self, source: &str) -> Vec<Token> {
+    fn scan_tokens(&mut self) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
 
         let mut should_skip_line = false;
-        while self.position < source.len() {
-            let byte = source.as_bytes()[self.position];
+        while self.position < self.source.len() {
+            let byte = self.source.as_bytes()[self.position];
 
             if should_skip_line {
                 if &[byte] != b"\n" {
@@ -26,7 +27,7 @@ impl Scanner {
                 should_skip_line = false;
             }
 
-            let next_byte = source.as_bytes().get(self.position + 1);
+            let next_byte = self.source.as_bytes().get(self.position + 1);
             let r#type = Self::identify_token(byte, next_byte);
             let token = Token { r#type };
 
@@ -95,7 +96,7 @@ mod tests {
     fn scans_simple_unnambiguous_tokens() {
         let code = "(){},.-+;*";
 
-        let tokens = Scanner::new().scan_tokens(code);
+        let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
@@ -119,7 +120,7 @@ mod tests {
     fn scans_ambiguous_tokens() {
         let code = "!= ! == = > >= < <=";
 
-        let tokens = Scanner::new().scan_tokens(code);
+        let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
@@ -141,7 +142,7 @@ mod tests {
     fn scans_ambiguous_tokens_with_comment() {
         let code = "+ - * / =   // This is a comment! != > etc";
 
-        let tokens = Scanner::new().scan_tokens(code);
+        let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
@@ -163,7 +164,7 @@ mod tests {
             // This is a comment! != > etc
             "#;
 
-        let tokens = Scanner::new().scan_tokens(code);
+        let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
@@ -185,7 +186,7 @@ mod tests {
             - +
             "#;
 
-        let tokens = Scanner::new().scan_tokens(code);
+        let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
