@@ -14,15 +14,9 @@ impl Scanner {
     fn scan_tokens(&mut self, source: &str) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
 
-        let mut should_skip_iteration = false;
         let mut should_skip_line = false;
         while self.position < source.as_bytes().len() {
             let byte = source.as_bytes()[self.position];
-            if should_skip_iteration {
-                should_skip_iteration = false;
-                self.position += 1;
-                continue;
-            }
 
             if should_skip_line {
                 if &[byte] != b"\n" {
@@ -44,7 +38,7 @@ impl Scanner {
                 Token { r#type: Type::SlashSlash } => should_skip_line = true,
                 token => {
                     if token.is_compound() {
-                        should_skip_iteration = true;
+                        self.position += 1;
                     }
                     tokens.push(token);
                 }
