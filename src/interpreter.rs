@@ -24,7 +24,7 @@ impl Scanner<'_> {
 
             match token {
                 Token { r#type: Type::Whitespace } => {
-                    self.position += 1;
+                    self.advance();
                     continue;
                 },
                 Token { r#type: Type::SlashSlash } => {
@@ -32,15 +32,19 @@ impl Scanner<'_> {
                 },
                 token => {
                     if token.is_compound() {
-                        self.position += 1;
+                        self.advance();
                     }
                     tokens.push(token);
                 }
             }
-            self.position += 1;
+            self.advance();
         }
 
         tokens
+    }
+
+    fn advance(&mut self) {
+        self.position += 1;
     }
 
     fn identify_token(&mut self, byte: u8, next_byte: Option<&u8>) -> Type {
@@ -50,7 +54,7 @@ impl Scanner<'_> {
             | b"\r"
             | b"\n" => Type::Whitespace,
             b"\"" => {
-                self.position += 1;
+                self.advance();
                 let start = self.position;
                 self.advance_until_find_any(&[b"\""]);
                 let end = self.position;
@@ -76,7 +80,7 @@ impl Scanner<'_> {
             digit if byte.is_ascii_digit() => {
                 let start = self.position;
                 self.advance_until_find_any(&[b" ", b"\n"]);
-                self.position += 1;
+                self.advance();
                 let end = self.position;
                 let n = std::str::from_utf8(&self.source.as_bytes()[start..end]).unwrap().parse::<i32>().unwrap();
                 Type::Number(n)
@@ -91,7 +95,7 @@ impl Scanner<'_> {
 
     fn advance_until_find_any(&mut self, bytes: &[&[u8; 1]]) {
         while !bytes.contains(&&[self.source.as_bytes()[self.position]]) && self.position < self.source.len() - 1 {
-            self.position += 1;
+            self.advance();
         }
     }
 }
