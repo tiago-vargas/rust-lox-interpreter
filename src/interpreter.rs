@@ -77,7 +77,7 @@ impl Scanner<'_> {
             b">" => decide_token(Type::Greater, (Type::GreaterEqual, b"="), next_byte),
             b"<" => decide_token(Type::Less, (Type::LessEqual, b"="), next_byte),
             b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
-            digit if byte.is_ascii_digit() => {
+            _digit if byte.is_ascii_digit() => {
                 let start = self.position;
                 self.advance_until_find_any(&[b" ", b"\n"]);
                 self.advance();
