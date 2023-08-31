@@ -15,7 +15,7 @@ impl Scanner<'_> {
     fn scan_tokens(&mut self) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
 
-        while self.position < self.source.len() {
+        while !self.is_at_end() {
             let byte = self.source.as_bytes()[self.position];
 
             let next_byte = self.source.as_bytes().get(self.position + 1);
@@ -36,6 +36,10 @@ impl Scanner<'_> {
         }
 
         tokens
+    }
+
+    fn is_at_end(&mut self) -> bool {
+        self.position >= self.source.len()
     }
 
     fn advance(&mut self) {
@@ -88,7 +92,7 @@ impl Scanner<'_> {
     }
 
     fn advance_until_find_any(&mut self, bytes: &[&[u8; 1]]) {
-        while self.position < self.source.len() && !bytes.contains(&&[self.source.as_bytes()[self.position]]) {
+        while !self.is_at_end() && !bytes.contains(&&[self.source.as_bytes()[self.position]]) {
             self.advance();
         }
     }
