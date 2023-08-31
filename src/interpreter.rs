@@ -75,7 +75,6 @@ impl Scanner<'_> {
             _digit if byte.is_ascii_digit() => {
                 let start = self.position;
                 self.advance_until_find_any(&[b" ", b"\n"]);
-                self.advance();
                 let end = self.position;
                 let n = std::str::from_utf8(&self.source.as_bytes()[start..end]).unwrap().parse::<i32>().unwrap();
                 Type::Number(n)
@@ -89,7 +88,7 @@ impl Scanner<'_> {
     }
 
     fn advance_until_find_any(&mut self, bytes: &[&[u8; 1]]) {
-        while !bytes.contains(&&[self.source.as_bytes()[self.position]]) && self.position < self.source.len() - 1 {
+        while self.position < self.source.len() && !bytes.contains(&&[self.source.as_bytes()[self.position]]) {
             self.advance();
         }
     }
