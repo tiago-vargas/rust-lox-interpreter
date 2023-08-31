@@ -28,7 +28,9 @@ impl Token {
             | Type::Minus
             | Type::Plus
             | Type::Semicolon
-            | Type::Star => false,
+            | Type::Star
+            | Type::String(_)            // Not exactly...
+            | Type::Number(_) => false,  // Not exactly...
 
             _ => true,
         }
