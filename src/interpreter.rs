@@ -50,7 +50,7 @@ impl Scanner<'_> {
     }
 
     fn identify_token(&mut self, byte: u8, next_byte: Option<&u8>) -> Type {
-        match &[byte] {
+        match &[self.current_byte()] {
             b" "
             | b"\t"
             | b"\r"
@@ -81,12 +81,21 @@ impl Scanner<'_> {
             b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
             _digit if byte.is_ascii_digit() => {
                 let start = self.position;
-                self.advance_until_find_any(&[b" ", b"\n"]);
+                // self.advance_until_not_ascii_digit();
+                while !self.is_at_end() && self.current_byte().is_ascii_digit() {
+                    self.advance();
+                }
                 let end = self.position;
                 let n = std::str::from_utf8(&self.source.as_bytes()[start..end]).unwrap().parse::<i32>().unwrap();
                 Type::Number(n)
             }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
+        }
+    }
+
+    fn advance_until_not_ascii_digit(&mut self) {
+        while !self.is_at_end() && self.current_byte().is_ascii_digit() {
+            self.advance();
         }
     }
 
@@ -287,6 +296,24 @@ mod tests {
             tokens,
             &[
                 Token { r#type: Type::Number(123) },
+            ],
+        )
+    }
+
+    #[test]
+    fn scans_integers() {
+        let code = "0 + 123 - 1";
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Number(0) },
+                Token { r#type: Type::Plus },
+                Token { r#type: Type::Number(123) },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::Number(1) },
             ],
         )
     }
