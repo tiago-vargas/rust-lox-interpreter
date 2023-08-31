@@ -59,7 +59,7 @@ impl Scanner<'_> {
                 self.advance_until_find_any(&[b"\""]);  // Finds the final `"`
                 let end = self.position;
                 let s = String::from_utf8(self.source.as_bytes()[start..end].to_vec());
-                let s = s.unwrap_or("".to_string());
+                let s = s.unwrap_or("".to_string());  // TODO: Add error token
                 Type::String(s)
             }
             b"(" => Type::LeftParen,
