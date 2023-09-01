@@ -80,14 +80,23 @@ impl Scanner<'_> {
             b"<" => decide_token(Type::Less, (Type::LessEqual, b"="), next_byte),
             b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
             _digit if byte.is_ascii_digit() => {
+                let mut is_f32 = false;
                 let start = self.position;
-                // self.advance_until_not_ascii_digit();
-                while !self.is_at_end() && self.current_byte().is_ascii_digit() {
+                self.advance_until_not_ascii_digit();
+                if !self.is_at_end() && &[self.current_byte()] == b"." {
                     self.advance();
+                    self.advance_until_not_ascii_digit();
+                    is_f32 = true;
                 }
                 let end = self.position;
-                let n = std::str::from_utf8(&self.source.as_bytes()[start..end]).unwrap().parse::<i32>().unwrap();
-                Type::Number(token::Literal::Integer(n))
+                let number = std::str::from_utf8(&self.source.as_bytes()[start..end]);
+                if is_f32 {
+                    let n = number.unwrap().parse::<f32>().unwrap();
+                    Type::Number(token::Literal::Float(n))
+                } else {
+                    let n = number.unwrap().parse::<i32>().unwrap();
+                    Type::Number(token::Literal::Integer(n))
+                }
             }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
@@ -316,6 +325,20 @@ mod tests {
                 Token { r#type: Type::Number(Literal::Integer(123)) },
                 Token { r#type: Type::Minus },
                 Token { r#type: Type::Number(Literal::Integer(1)) },
+            ],
+        )
+    }
+
+    #[test]
+    fn scans_lone_floats() {
+        let code = "12.3";
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Number(Literal::Float(12.3)) },
             ],
         )
     }
