@@ -375,6 +375,24 @@ mod tests {
         )
     }
 
+    #[test]
+    fn scans_floats() {
+        let code = "0 + 12.3 / 5";
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Number(Literal::Integer(0)) },
+                Token { r#type: Type::Plus },
+                Token { r#type: Type::Number(Literal::Float(12.3)) },
+                Token { r#type: Type::Slash },
+                Token { r#type: Type::Number(Literal::Integer(5)) },
+            ],
+        )
+    }
+
     // #[test]
     // fn shows_error_when_source_is_not_in_utf8() {
     //     let code = r#""💖""#.encode_utf16();
