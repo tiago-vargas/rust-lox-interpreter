@@ -92,6 +92,10 @@ impl Scanner<'_> {
                     Type::Number(token::Literal::Integer(n))
                 }
             }
+            a if is_ascii_alphabetic(a) => {
+                self.advance_until_find_any(&[b" ", b"\n"]);
+                Type::Keyword
+            }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
     }
@@ -133,6 +137,12 @@ impl Scanner<'_> {
             self.advance();
         }
     }
+}
+
+fn is_ascii_alphabetic(a: &[u8; 1]) -> bool {
+    // let byte = a[0];
+
+    (b"a" <= a && a <= b"z") || (b"A" <= a && a <= b"Z")
 }
 
 fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Type {
@@ -389,6 +399,35 @@ mod tests {
                 Token { r#type: Type::Number(Literal::Float(12.3)) },
                 Token { r#type: Type::Slash },
                 Token { r#type: Type::Number(Literal::Integer(5)) },
+            ],
+        )
+    }
+
+    #[test]
+    fn scans_reserved_words() {
+        let code = "var";
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Keyword },
+            ],
+        )
+    }
+
+    #[test]
+    fn scans_reserved_words_between_newlines() {
+        let code = "var\nvar";
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Keyword },
+                Token { r#type: Type::Keyword },
             ],
         )
     }

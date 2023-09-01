@@ -67,6 +67,8 @@ pub(crate) enum Type {
     Number(Literal),
 
     Error(Error),
+
+    Keyword,
 }
 
 #[derive(Debug, PartialEq)]
