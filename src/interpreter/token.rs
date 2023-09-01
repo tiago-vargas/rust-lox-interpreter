@@ -31,8 +31,9 @@ impl Token {
             | Type::Bang
             | Type::Greater
             | Type::Less
-            | Type::StringLiteral(_)            // Not exactly...
-            | Type::NumberLiteral(_) => false,  // Not exactly...
+            | Type::StringLiteral(_)      // Not exactly...
+            | Type::NumberLiteral(_)      // Not exactly...
+            | Type::Keyword(_) => false,  // Not exactly...
 
             _ => true,
         }
@@ -69,12 +70,34 @@ pub(crate) enum Type {
     NumberLiteral(NumberLiteral),
 
     Error(Error),
+
+    Keyword(Keyword),
 }
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum NumberLiteral {
     Integer(i32),
     Float(f64),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Keyword {
+    And,
+    Class,
+    Else,
+    False,
+    For,
+    Fun,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
 }
 
 #[derive(Debug, PartialEq)]

@@ -90,6 +90,29 @@ impl Scanner<'_> {
             b"<" => decide_token_type(Less, (LessEqual, b"="), self.next_byte()),
             b"/" => decide_token_type(Slash, (SlashSlash, b"/"), self.next_byte()),
             [digit] if digit.is_ascii_digit() => self.treat_number(),
+            [a] if a.is_ascii_alphabetic() => {
+                let range = self.measure_word();
+                let word = &self.bytes[range];
+                match word {
+                    b"and" => Keyword(token::Keyword::And),
+                    b"class" => Keyword(token::Keyword::Class),
+                    b"else" => Keyword(token::Keyword::Else),
+                    b"false" => Keyword(token::Keyword::False),
+                    b"for" => Keyword(token::Keyword::For),
+                    b"fun" => Keyword(token::Keyword::Fun),
+                    b"if" => Keyword(token::Keyword::If),
+                    b"nil" => Keyword(token::Keyword::Nil),
+                    b"or" => Keyword(token::Keyword::Or),
+                    b"print" => Keyword(token::Keyword::Print),
+                    b"return" => Keyword(token::Keyword::Return),
+                    b"super" => Keyword(token::Keyword::Super),
+                    b"this" => Keyword(token::Keyword::This),
+                    b"true" => Keyword(token::Keyword::True),
+                    b"var" => Keyword(token::Keyword::Var),
+                    b"while" => Keyword(token::Keyword::While),
+                    _ => todo!("Found `{}`", std::str::from_utf8(word).unwrap()),
+                }
+            }
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
         }
     }
@@ -147,6 +170,17 @@ impl Scanner<'_> {
         let range = start..end_exclusive;
 
         (is_float, range)
+    }
+
+    fn measure_word(&mut self) -> RangeInclusive<usize> {
+        let start = self.position;
+        while !self.is_at_end() && self.current_byte().is_ascii_alphabetic() {
+            self.advance();
+        }
+        self.position -= 1;
+        let end = self.position;
+
+        start..=end
     }
 
     fn advance_until_not_ascii_digit(&mut self) {
@@ -446,6 +480,71 @@ mod tests {
                     Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
                     Token { r#type: Slash },
                     Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
+                ],
+            )
+        }
+    }
+
+    mod keywords {
+        use super::*;
+
+        #[test]
+        fn scans_keywords() {
+            let code = r#"
+                and
+                class
+                else
+                false
+                for
+                fun
+                if
+                nil
+                or
+                print
+                return
+                super
+                this
+                true
+                var
+                while
+            "#;
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Keyword(Keyword::And) },
+                    Token { r#type: Keyword(Keyword::Class) },
+                    Token { r#type: Keyword(Keyword::Else) },
+                    Token { r#type: Keyword(Keyword::False) },
+                    Token { r#type: Keyword(Keyword::For) },
+                    Token { r#type: Keyword(Keyword::Fun) },
+                    Token { r#type: Keyword(Keyword::If) },
+                    Token { r#type: Keyword(Keyword::Nil) },
+                    Token { r#type: Keyword(Keyword::Or) },
+                    Token { r#type: Keyword(Keyword::Print) },
+                    Token { r#type: Keyword(Keyword::Return) },
+                    Token { r#type: Keyword(Keyword::Super) },
+                    Token { r#type: Keyword(Keyword::This) },
+                    Token { r#type: Keyword(Keyword::True) },
+                    Token { r#type: Keyword(Keyword::Var) },
+                    Token { r#type: Keyword(Keyword::While) },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_keywords_between_newlines() {
+            let code = "fun\nvar";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Keyword(Keyword::Fun) },
+                    Token { r#type: Keyword(Keyword::Var) },
                 ],
             )
         }
