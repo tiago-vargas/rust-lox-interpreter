@@ -56,11 +56,8 @@ impl Scanner<'_> {
             | b"\r"
             | b"\n" => Type::Whitespace,
             b"\"" => {
-                self.advance();  // Skips the initial `"`
-                let start = self.position;
-                self.advance_until_find_any(&[b"\""]);  // Finds the final `"`
-                let end = self.position;
-                let s = String::from_utf8(self.source.as_bytes()[start..end].to_vec());
+                let (start, end) = self.measure_string();
+                let s = String::from_utf8(self.source.as_bytes()[start+1..end].to_vec());
                 let s = s.unwrap_or("".to_string());  // TODO: Add error token
                 Type::String(s)
             }
@@ -100,6 +97,15 @@ impl Scanner<'_> {
             }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
+    }
+
+    fn measure_string(&mut self) -> (usize, usize) {
+        let start = self.position;  // Includes the initial `"`
+        self.advance();  // Skips the initial `"` again to avoid matching below
+        self.advance_until_find_any(&[b"\""]);  // Finds the final `"`
+        let end = self.position;  // Also includes the final `"`
+
+        (start, end)
     }
 
     fn advance_until_not_ascii_digit(&mut self) {
