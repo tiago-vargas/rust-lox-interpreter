@@ -93,6 +93,7 @@ impl Scanner<'_> {
                 }
             }
             a if is_ascii_alphabetic(a) => {
+                let (start, end) = self.measure_word();
                 self.advance_until_find_any(&[b" ", b"\n"]);
                 Type::Identifier(token::Keyword::Var)
             }
@@ -118,6 +119,14 @@ impl Scanner<'_> {
         self.advance();  // Skips the initial `"` again to avoid matching below
         self.advance_until_find_any(&[b"\""]);  // Finds the final `"`
         let end = self.position;  // Also includes the final `"`
+
+        (start, end)
+    }
+
+    fn measure_word(&mut self) -> (usize, usize) {
+        let start = self.position;
+        self.advance_until_find_any(&[b" ", b"\n"]);
+        let end = self.position;
 
         (start, end)
     }
@@ -403,7 +412,7 @@ mod tests {
         )
     }
 
-    // #[test]
+    #[test]
     fn scans_reserved_words() {
         let code = r#"
             and
