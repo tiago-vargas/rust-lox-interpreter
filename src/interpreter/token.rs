@@ -68,7 +68,27 @@ pub(crate) enum Type {
 
     Error(Error),
 
-    Keyword,
+    Identifier(Keyword),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Keyword {
+    And,
+    Class,
+    Else,
+    False,
+    For,
+    Fun,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
 }
 
 #[derive(Debug, PartialEq)]

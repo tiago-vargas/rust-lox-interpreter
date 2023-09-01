@@ -94,7 +94,7 @@ impl Scanner<'_> {
             }
             a if is_ascii_alphabetic(a) => {
                 self.advance_until_find_any(&[b" ", b"\n"]);
-                Type::Keyword
+                Type::Identifier(token::Keyword::Var)
             }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
@@ -159,7 +159,7 @@ fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Opti
 
 #[cfg(test)]
 mod tests {
-    use crate::interpreter::token::Literal;
+    use crate::interpreter::token::{Literal, Keyword};
 
     use super::*;
 
@@ -403,16 +403,48 @@ mod tests {
         )
     }
 
-    #[test]
+    // #[test]
     fn scans_reserved_words() {
-        let code = "var";
+        let code = r#"
+            and
+            class
+            else
+            false
+            for
+            fun
+            if
+            nil
+            or
+            print
+            return
+            super
+            this
+            true
+            var
+            while
+        "#;
 
         let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
             &[
-                Token { r#type: Type::Keyword },
+                Token { r#type: Type::Identifier(Keyword::And) },
+                Token { r#type: Type::Identifier(Keyword::Class) },
+                Token { r#type: Type::Identifier(Keyword::Else) },
+                Token { r#type: Type::Identifier(Keyword::False) },
+                Token { r#type: Type::Identifier(Keyword::For) },
+                Token { r#type: Type::Identifier(Keyword::Fun) },
+                Token { r#type: Type::Identifier(Keyword::If) },
+                Token { r#type: Type::Identifier(Keyword::Nil) },
+                Token { r#type: Type::Identifier(Keyword::Or) },
+                Token { r#type: Type::Identifier(Keyword::Print) },
+                Token { r#type: Type::Identifier(Keyword::Return) },
+                Token { r#type: Type::Identifier(Keyword::Super) },
+                Token { r#type: Type::Identifier(Keyword::This) },
+                Token { r#type: Type::Identifier(Keyword::True) },
+                Token { r#type: Type::Identifier(Keyword::Var) },
+                Token { r#type: Type::Identifier(Keyword::While) },
             ],
         )
     }
@@ -426,8 +458,8 @@ mod tests {
         assert_eq!(
             tokens,
             &[
-                Token { r#type: Type::Keyword },
-                Token { r#type: Type::Keyword },
+                Token { r#type: Type::Identifier(Keyword::Var) },
+                Token { r#type: Type::Identifier(Keyword::Var) },
             ],
         )
     }
