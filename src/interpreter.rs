@@ -77,15 +77,7 @@ impl Scanner<'_> {
             b"<" => decide_token(Type::Less, (Type::LessEqual, b"="), next_byte),
             b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
             _digit if byte.is_ascii_digit() => {
-                let mut is_f32 = false;
-                let start = self.position;
-                self.advance_until_not_ascii_digit();
-                if !self.is_at_end() && &[self.current_byte()] == b"." {
-                    self.advance();
-                    self.advance_until_not_ascii_digit();
-                    is_f32 = true;
-                }
-                let end = self.position;
+                let (is_f32, start, end) = self.measure_number();
                 let number = std::str::from_utf8(&self.bytes[start..end]);
                 if is_f32 {
                     let n = number.unwrap().parse::<f32>().unwrap();
@@ -99,6 +91,19 @@ impl Scanner<'_> {
         }
     }
 
+    fn measure_number(&mut self) -> (bool, usize, usize) {
+        let mut is_f32 = false;
+        let start = self.position;
+        self.advance_until_not_ascii_digit();
+        if !self.is_at_end() && &[self.current_byte()] == b"." {
+            self.advance();
+            self.advance_until_not_ascii_digit();
+            is_f32 = true;
+        }
+        let end = self.position;
+        (is_f32, start, end)
+    }
+
     fn measure_string(&mut self) -> (usize, usize) {
         let start = self.position;  // Includes the initial `"`
         self.advance();  // Skips the initial `"` again to avoid matching below
@@ -108,18 +113,18 @@ impl Scanner<'_> {
         (start, end)
     }
 
-    fn advance_until_not_ascii_digit(&mut self) {
-        while !self.is_at_end() && self.current_byte().is_ascii_digit() {
-            self.advance();
-        }
-    }
-
     fn skip_current_line(&mut self) {
         self.advance_until_find_any(&[b"\n"]);
     }
 
     fn advance_until_find_any(&mut self, bytes: &[&[u8; 1]]) {
         while !self.is_at_end() && !bytes.contains(&&[self.current_byte()]) {
+            self.advance();
+        }
+    }
+
+    fn advance_until_not_ascii_digit(&mut self) {
+        while !self.is_at_end() && self.current_byte().is_ascii_digit() {
             self.advance();
         }
     }
