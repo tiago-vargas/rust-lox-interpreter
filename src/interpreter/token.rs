@@ -64,5 +64,11 @@ pub(crate) enum Type {
     Whitespace,  // Only for internal use
 
     String(String),
-    Number(i32),
+    Number(Literal),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Literal {
+    Integer(i32),
+    Float(f32),
 }

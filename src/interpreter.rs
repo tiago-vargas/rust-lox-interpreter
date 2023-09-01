@@ -87,7 +87,7 @@ impl Scanner<'_> {
                 }
                 let end = self.position;
                 let n = std::str::from_utf8(&self.source.as_bytes()[start..end]).unwrap().parse::<i32>().unwrap();
-                Type::Number(n)
+                Type::Number(token::Literal::Integer(n))
             }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
@@ -124,6 +124,8 @@ fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Opti
 
 #[cfg(test)]
 mod tests {
+    use crate::interpreter::token::Literal;
+
     use super::*;
 
     #[test]
@@ -295,7 +297,7 @@ mod tests {
         assert_eq!(
             tokens,
             &[
-                Token { r#type: Type::Number(123) },
+                Token { r#type: Type::Number(Literal::Integer(123)) },
             ],
         )
     }
@@ -309,11 +311,11 @@ mod tests {
         assert_eq!(
             tokens,
             &[
-                Token { r#type: Type::Number(0) },
+                Token { r#type: Type::Number(Literal::Integer(0)) },
                 Token { r#type: Type::Plus },
-                Token { r#type: Type::Number(123) },
+                Token { r#type: Type::Number(Literal::Integer(123)) },
                 Token { r#type: Type::Minus },
-                Token { r#type: Type::Number(1) },
+                Token { r#type: Type::Number(Literal::Integer(1)) },
             ],
         )
     }
