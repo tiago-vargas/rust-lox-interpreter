@@ -57,9 +57,14 @@ impl Scanner<'_> {
             | b"\n" => Type::Whitespace,
             b"\"" => {
                 let (start, end) = self.measure_string();
-                let s = String::from_utf8(self.bytes[start+1..end].to_vec());
-                let s = s.unwrap();  // TODO: Add error token
-                Type::String(s)
+                if self.is_at_end() {
+                    // Didn't find the closing `"`...
+                    Type::Error(token::Error::UnterminatedString)
+                } else {
+                    let s = String::from_utf8(self.bytes[start+1..end].to_vec());
+                    let s = s.unwrap();  // TODO: Add error token
+                    Type::String(s)
+                }
             }
             b"(" => Type::LeftParen,
             b")" => Type::RightParen,
@@ -304,6 +309,22 @@ mod tests {
                 Token { r#type: Type::String("This is a string!\n        And it is still going!".to_string()) },
                 Token { r#type: Type::Minus },
                 Token { r#type: Type::Plus },
+            ],
+        )
+    }
+
+    #[test]
+    fn detects_unterminated_strings() {
+        let code = r#"+ - "This is a string! And it's missing the closing quote..."#;
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Plus },
+                Token { r#type: Type::Minus },
+                Token { r#type: Type::Error(token::Error::UnterminatedString) },
             ],
         )
     }

@@ -66,7 +66,12 @@ pub(crate) enum Type {
     String(String),
     Number(Literal),
 
-    Error,
+    Error(Error),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Error {
+    UnterminatedString,
 }
 
 #[derive(Debug, PartialEq)]
