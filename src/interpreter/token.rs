@@ -65,6 +65,8 @@ pub(crate) enum Type {
 
     String(String),
     Number(Literal),
+
+    Error,
 }
 
 #[derive(Debug, PartialEq)]

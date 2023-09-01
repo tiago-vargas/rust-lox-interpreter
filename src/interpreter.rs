@@ -3,13 +3,13 @@ mod token;
 use self::token::{Token, Type};
 
 struct Scanner<'a> {
-    source: &'a str,
+    bytes: &'a [u8],
     position: usize,
 }
 
 impl Scanner<'_> {
     fn new(source: &str) -> Scanner {
-        Scanner { source, position: 0 }
+        Scanner { bytes: source.as_bytes(), position: 0 }
     }
 
     fn scan_tokens(&mut self) -> Vec<Token> {
@@ -17,7 +17,7 @@ impl Scanner<'_> {
 
         while !self.is_at_end() {
             let current_byte = self.current_byte();
-            let next_byte = self.source.as_bytes().get(self.position + 1);
+            let next_byte = self.bytes.get(self.position + 1);
             let r#type = self.identify_token(current_byte, next_byte);
             let token = Token { r#type };
 
@@ -38,11 +38,11 @@ impl Scanner<'_> {
     }
 
     fn is_at_end(&mut self) -> bool {
-        self.position >= self.source.len()
+        self.position >= self.bytes.len()
     }
 
     fn current_byte(&mut self) -> u8 {
-        self.source.as_bytes()[self.position]
+        self.bytes[self.position]
     }
 
     fn advance(&mut self) {
@@ -57,8 +57,8 @@ impl Scanner<'_> {
             | b"\n" => Type::Whitespace,
             b"\"" => {
                 let (start, end) = self.measure_string();
-                let s = String::from_utf8(self.source.as_bytes()[start+1..end].to_vec());
-                let s = s.unwrap_or("".to_string());  // TODO: Add error token
+                let s = String::from_utf8(self.bytes[start+1..end].to_vec());
+                let s = s.unwrap();  // TODO: Add error token
                 Type::String(s)
             }
             b"(" => Type::LeftParen,
@@ -86,7 +86,7 @@ impl Scanner<'_> {
                     is_f32 = true;
                 }
                 let end = self.position;
-                let number = std::str::from_utf8(&self.source.as_bytes()[start..end]);
+                let number = std::str::from_utf8(&self.bytes[start..end]);
                 if is_f32 {
                     let n = number.unwrap().parse::<f32>().unwrap();
                     Type::Number(token::Literal::Float(n))
@@ -348,4 +348,18 @@ mod tests {
             ],
         )
     }
+
+    // #[test]
+    // fn shows_error_when_source_is_not_in_utf8() {
+    //     let code = r#""💖""#.encode_utf16();
+
+    //     let tokens = Scanner::new(code.).scan_tokens();
+
+    //     assert_eq!(
+    //         tokens,
+    //         &[
+    //             Token { r#type: Type::Error },
+    //         ],
+    //     )
+    // }
 }
