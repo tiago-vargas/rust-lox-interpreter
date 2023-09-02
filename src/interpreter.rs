@@ -96,22 +96,22 @@ impl Scanner<'_> {
                 let (start, end) = self.measure_word();
                 let word = &self.bytes[start..end];
                 match word {
-                    b"and" => Type::Identifier(token::Keyword::And),
-                    b"class" => Type::Identifier(token::Keyword::Class),
-                    b"else" => Type::Identifier(token::Keyword::Else),
-                    b"false" => Type::Identifier(token::Keyword::False),
-                    b"for" => Type::Identifier(token::Keyword::For),
-                    b"fun" => Type::Identifier(token::Keyword::Fun),
-                    b"if" => Type::Identifier(token::Keyword::If),
-                    b"nil" => Type::Identifier(token::Keyword::Nil),
-                    b"or" => Type::Identifier(token::Keyword::Or),
-                    b"print" => Type::Identifier(token::Keyword::Print),
-                    b"return" => Type::Identifier(token::Keyword::Return),
-                    b"super" => Type::Identifier(token::Keyword::Super),
-                    b"this" => Type::Identifier(token::Keyword::This),
-                    b"true" => Type::Identifier(token::Keyword::True),
-                    b"var" => Type::Identifier(token::Keyword::Var),
-                    b"while" => Type::Identifier(token::Keyword::While),
+                    b"and" => Type::Keyword(token::Keyword::And),
+                    b"class" => Type::Keyword(token::Keyword::Class),
+                    b"else" => Type::Keyword(token::Keyword::Else),
+                    b"false" => Type::Keyword(token::Keyword::False),
+                    b"for" => Type::Keyword(token::Keyword::For),
+                    b"fun" => Type::Keyword(token::Keyword::Fun),
+                    b"if" => Type::Keyword(token::Keyword::If),
+                    b"nil" => Type::Keyword(token::Keyword::Nil),
+                    b"or" => Type::Keyword(token::Keyword::Or),
+                    b"print" => Type::Keyword(token::Keyword::Print),
+                    b"return" => Type::Keyword(token::Keyword::Return),
+                    b"super" => Type::Keyword(token::Keyword::Super),
+                    b"this" => Type::Keyword(token::Keyword::This),
+                    b"true" => Type::Keyword(token::Keyword::True),
+                    b"var" => Type::Keyword(token::Keyword::Var),
+                    b"while" => Type::Keyword(token::Keyword::While),
                     _ => todo!("Found `{}`", std::str::from_utf8(word).unwrap()),
                 }
                 // Type::Identifier(token::Keyword::Var)
@@ -457,22 +457,22 @@ mod tests {
         assert_eq!(
             tokens,
             &[
-                Token { r#type: Type::Identifier(Keyword::And) },
-                Token { r#type: Type::Identifier(Keyword::Class) },
-                Token { r#type: Type::Identifier(Keyword::Else) },
-                Token { r#type: Type::Identifier(Keyword::False) },
-                Token { r#type: Type::Identifier(Keyword::For) },
-                Token { r#type: Type::Identifier(Keyword::Fun) },
-                Token { r#type: Type::Identifier(Keyword::If) },
-                Token { r#type: Type::Identifier(Keyword::Nil) },
-                Token { r#type: Type::Identifier(Keyword::Or) },
-                Token { r#type: Type::Identifier(Keyword::Print) },
-                Token { r#type: Type::Identifier(Keyword::Return) },
-                Token { r#type: Type::Identifier(Keyword::Super) },
-                Token { r#type: Type::Identifier(Keyword::This) },
-                Token { r#type: Type::Identifier(Keyword::True) },
-                Token { r#type: Type::Identifier(Keyword::Var) },
-                Token { r#type: Type::Identifier(Keyword::While) },
+                Token { r#type: Type::Keyword(Keyword::And) },
+                Token { r#type: Type::Keyword(Keyword::Class) },
+                Token { r#type: Type::Keyword(Keyword::Else) },
+                Token { r#type: Type::Keyword(Keyword::False) },
+                Token { r#type: Type::Keyword(Keyword::For) },
+                Token { r#type: Type::Keyword(Keyword::Fun) },
+                Token { r#type: Type::Keyword(Keyword::If) },
+                Token { r#type: Type::Keyword(Keyword::Nil) },
+                Token { r#type: Type::Keyword(Keyword::Or) },
+                Token { r#type: Type::Keyword(Keyword::Print) },
+                Token { r#type: Type::Keyword(Keyword::Return) },
+                Token { r#type: Type::Keyword(Keyword::Super) },
+                Token { r#type: Type::Keyword(Keyword::This) },
+                Token { r#type: Type::Keyword(Keyword::True) },
+                Token { r#type: Type::Keyword(Keyword::Var) },
+                Token { r#type: Type::Keyword(Keyword::While) },
             ],
         )
     }
@@ -486,8 +486,24 @@ mod tests {
         assert_eq!(
             tokens,
             &[
-                Token { r#type: Type::Identifier(Keyword::Fun) },
-                Token { r#type: Type::Identifier(Keyword::Var) },
+                Token { r#type: Type::Keyword(Keyword::Fun) },
+                Token { r#type: Type::Keyword(Keyword::Var) },
+            ],
+        )
+    }
+
+    fn scans_identifiers() {
+        let code = "var fred = 5;";
+
+        let tokens = Scanner::new(code).scan_tokens();
+
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Keyword(Keyword::Var) },
+                Token { r#type: Type::Identifier("fred".to_string()) },
+                Token { r#type: Type::Equal },
+                Token { r#type: Type::Number(Literal::Integer(5)) },
             ],
         )
     }

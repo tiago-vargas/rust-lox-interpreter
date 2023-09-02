@@ -31,7 +31,7 @@ impl Token {
             | Type::Star
             | Type::String(_)                // Not exactly...
             | Type::Number(_)                // Not exactly...
-            | Type::Identifier(_) => false,  // Not exactly...
+            | Type::Keyword(_) => false,  // Not exactly...
 
             _ => true,
         }
@@ -69,7 +69,8 @@ pub(crate) enum Type {
 
     Error(Error),
 
-    Identifier(Keyword),
+    Keyword(Keyword),
+    Identifier(String),
 }
 
 #[derive(Debug, PartialEq)]
