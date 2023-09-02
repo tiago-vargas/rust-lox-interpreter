@@ -94,8 +94,27 @@ impl Scanner<'_> {
             }
             a if is_ascii_alphabetic(a) => {
                 let (start, end) = self.measure_word();
-                self.advance_until_find_any(&[b" ", b"\n"]);
-                Type::Identifier(token::Keyword::Var)
+                let word = &self.bytes[start..end];
+                match word {
+                    b"and" => Type::Identifier(token::Keyword::And),
+                    b"class" => Type::Identifier(token::Keyword::Class),
+                    b"else" => Type::Identifier(token::Keyword::Else),
+                    b"false" => Type::Identifier(token::Keyword::False),
+                    b"for" => Type::Identifier(token::Keyword::For),
+                    b"fun" => Type::Identifier(token::Keyword::Fun),
+                    b"if" => Type::Identifier(token::Keyword::If),
+                    b"nil" => Type::Identifier(token::Keyword::Nil),
+                    b"or" => Type::Identifier(token::Keyword::Or),
+                    b"print" => Type::Identifier(token::Keyword::Print),
+                    b"return" => Type::Identifier(token::Keyword::Return),
+                    b"super" => Type::Identifier(token::Keyword::Super),
+                    b"this" => Type::Identifier(token::Keyword::This),
+                    b"true" => Type::Identifier(token::Keyword::True),
+                    b"var" => Type::Identifier(token::Keyword::Var),
+                    b"while" => Type::Identifier(token::Keyword::While),
+                    _ => todo!("Found `{}`", std::str::from_utf8(word).unwrap()),
+                }
+                // Type::Identifier(token::Keyword::Var)
             }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
@@ -460,14 +479,14 @@ mod tests {
 
     #[test]
     fn scans_reserved_words_between_newlines() {
-        let code = "var\nvar";
+        let code = "fun\nvar";
 
         let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
             &[
-                Token { r#type: Type::Identifier(Keyword::Var) },
+                Token { r#type: Type::Identifier(Keyword::Fun) },
                 Token { r#type: Type::Identifier(Keyword::Var) },
             ],
         )
