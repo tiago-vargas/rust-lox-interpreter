@@ -17,8 +17,7 @@ impl Scanner<'_> {
 
         while !self.is_at_end() {
             let current_byte = self.current_byte();
-            let next_byte = self.bytes.get(self.position + 1);
-            let r#type = self.identify_token(current_byte, next_byte);
+            let r#type = self.identify_token(current_byte);
             let token = Token { r#type };
 
             match token {
@@ -49,7 +48,7 @@ impl Scanner<'_> {
         self.position += 1;
     }
 
-    fn identify_token(&mut self, byte: u8, next_byte: Option<&u8>) -> Type {
+    fn identify_token(&mut self, byte: u8) -> Type {
         match &[self.current_byte()] {
             b" "
             | b"\t"
@@ -76,11 +75,11 @@ impl Scanner<'_> {
             b"+" => Type::Plus,
             b";" => Type::Semicolon,
             b"*" => Type::Star,
-            b"!" => decide_token(Type::Bang, (Type::BangEqual, b"="), next_byte),
-            b"=" => decide_token(Type::Equal, (Type::EqualEqual, b"="), next_byte),
-            b">" => decide_token(Type::Greater, (Type::GreaterEqual, b"="), next_byte),
-            b"<" => decide_token(Type::Less, (Type::LessEqual, b"="), next_byte),
-            b"/" => decide_token(Type::Slash, (Type::SlashSlash, b"/"), next_byte),
+            b"!" => self.decide_token(Type::Bang, (Type::BangEqual, b"=")),
+            b"=" => self.decide_token(Type::Equal, (Type::EqualEqual, b"=")),
+            b">" => self.decide_token(Type::Greater, (Type::GreaterEqual, b"=")),
+            b"<" => self.decide_token(Type::Less, (Type::LessEqual, b"=")),
+            b"/" => self.decide_token(Type::Slash, (Type::SlashSlash, b"/")),
             _digit if byte.is_ascii_digit() => {
                 let (is_f32, start, end) = self.measure_number();
                 let number = std::str::from_utf8(&self.bytes[start..end]);
@@ -112,9 +111,8 @@ impl Scanner<'_> {
                     b"true" => Type::Keyword(token::Keyword::True),
                     b"var" => Type::Keyword(token::Keyword::Var),
                     b"while" => Type::Keyword(token::Keyword::While),
-                    _ => todo!("Found `{}`", std::str::from_utf8(word).unwrap()),
+                    bytes => Type::Identifier(String::from_utf8(bytes.to_vec()).unwrap()),
                 }
-                // Type::Identifier(token::Keyword::Var)
             }
             _ => todo!("Unexpected token {:#?}", std::str::from_utf8(&[byte])),
         }
@@ -144,7 +142,9 @@ impl Scanner<'_> {
 
     fn measure_word(&mut self) -> (usize, usize) {
         let start = self.position;
-        self.advance_until_find_any(&[b" ", b"\n"]);
+        while !self.is_at_end() && is_ascii_alphabetic(&[self.current_byte()]) {
+            self.advance();
+        }
         let end = self.position;
 
         (start, end)
@@ -165,6 +165,22 @@ impl Scanner<'_> {
             self.advance();
         }
     }
+
+    fn decide_token(&mut self, simple_type: Type, compound_type: (Type, &[u8])) -> Type {
+        let next_byte = self.bytes.get(self.position + 1);
+        match next_byte {
+            Some(&byte) => {
+                match byte {
+                    b if compound_type.1 == &[b] => {
+                        self.advance();
+                        compound_type.0
+                    },
+                    _ => simple_type,
+                }
+            },
+            None => simple_type,
+        }
+    }
 }
 
 fn is_ascii_alphabetic(a: &[u8; 1]) -> bool {
@@ -173,17 +189,6 @@ fn is_ascii_alphabetic(a: &[u8; 1]) -> bool {
     (b"a" <= a && a <= b"z") || (b"A" <= a && a <= b"Z")
 }
 
-fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Type {
-    match next_byte {
-        Some(&byte) => {
-            match byte {
-                b if compound_type.1 == &[b] => compound_type.0,
-                _ => simple_type,
-            }
-        },
-        None => simple_type,
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -492,21 +497,41 @@ mod tests {
         )
     }
 
-    fn scans_identifiers() {
-        let code = "var fred = 5;";
+    // #[test]
+    // fn scans_identifiers() {
+    //     let code = "var fred = 5;";
 
-        let tokens = Scanner::new(code).scan_tokens();
+    //     let tokens = Scanner::new(code).scan_tokens();
 
-        assert_eq!(
-            tokens,
-            &[
-                Token { r#type: Type::Keyword(Keyword::Var) },
-                Token { r#type: Type::Identifier("fred".to_string()) },
-                Token { r#type: Type::Equal },
-                Token { r#type: Type::Number(Literal::Integer(5)) },
-            ],
-        )
-    }
+    //     assert_eq!(
+    //         tokens,
+    //         &[
+    //             Token { r#type: Type::Keyword(Keyword::Var) },
+    //             Token { r#type: Type::Identifier("fred".to_string()) },
+    //             Token { r#type: Type::Equal },
+    //             Token { r#type: Type::Number(Literal::Integer(5)) },
+    //             Token { r#type: Type::Semicolon },
+    //         ],
+    //     )
+    // }
+
+    // #[test]
+    // fn scans_identifiers_with_minimal_whitespace() {
+    //     let code = "var fred=5;";
+
+    //     let tokens = Scanner::new(code).scan_tokens();
+
+    //     assert_eq!(
+    //         tokens,
+    //         &[
+    //             Token { r#type: Type::Keyword(Keyword::Var) },
+    //             Token { r#type: Type::Identifier("fred".to_string()) },
+    //             Token { r#type: Type::Equal },
+    //             Token { r#type: Type::Number(Literal::Integer(5)) },
+    //             Token { r#type: Type::Semicolon },
+    //         ],
+    //     )
+    // }
 
     // #[test]
     // fn shows_error_when_source_is_not_in_utf8() {
