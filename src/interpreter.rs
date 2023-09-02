@@ -24,12 +24,7 @@ impl Scanner<'_> {
             match token {
                 Token { r#type: Type::SlashSlash } => self.skip_current_line(),
                 Token { r#type: Type::Whitespace } => (),
-                token => {
-                    if token.is_compound() {
-                        self.advance();
-                    }
-                    tokens.push(token);
-                }
+                token => tokens.push(token),
             }
             self.advance();
         }
@@ -84,11 +79,11 @@ impl Scanner<'_> {
             b"+" => Plus,
             b";" => Semicolon,
             b"*" => Star,
-            b"!" => decide_token_type(Bang, (BangEqual, b"="), self.next_byte()),
-            b"=" => decide_token_type(Equal, (EqualEqual, b"="), self.next_byte()),
-            b">" => decide_token_type(Greater, (GreaterEqual, b"="), self.next_byte()),
-            b"<" => decide_token_type(Less, (LessEqual, b"="), self.next_byte()),
-            b"/" => decide_token_type(Slash, (SlashSlash, b"/"), self.next_byte()),
+            b"!" => self.decide_token_type(Bang, (BangEqual, b"=")),
+            b"=" => self.decide_token_type(Equal, (EqualEqual, b"=")),
+            b">" => self.decide_token_type(Greater, (GreaterEqual, b"=")),
+            b"<" => self.decide_token_type(Less, (LessEqual, b"=")),
+            b"/" => self.decide_token_type(Slash, (SlashSlash, b"/")),
             [digit] if digit.is_ascii_digit() => self.treat_number(),
             [a] if a.is_ascii_alphabetic() => {
                 let range = self.measure_word();
@@ -188,19 +183,22 @@ impl Scanner<'_> {
             self.advance();
         }
     }
-}
 
-/// # Arguments
-/// * `compound_type`: (`type`, `byte`)
-///
-/// Returns `type` if `next_byte` is `byte`, otherwise returns `simple_type`
-fn decide_token_type(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Type {
-    let expected_bytes = compound_type.1;
-    let compound_type = compound_type.0;
-    match next_byte {
-        Some(&byte) if &[byte] == expected_bytes => compound_type,
-        Some(_)
-        | None => simple_type,
+    /// # Arguments
+    /// * `compound_type`: (`type`, `byte`)
+    ///
+    /// Returns `type` if `next_byte` is `byte`, otherwise returns `simple_type`
+    fn decide_token_type(&mut self, simple_type: Type, compound_type: (Type, &[u8])) -> Type {
+        let expected_bytes = compound_type.1;
+        let compound_type = compound_type.0;
+        match self.next_byte() {
+            Some(&byte) if &[byte] == expected_bytes => {
+                self.advance();  // Skips the next character to avoid matching it again
+                compound_type
+            }
+            Some(_)
+            | None => simple_type,
+        }
     }
 }
 
