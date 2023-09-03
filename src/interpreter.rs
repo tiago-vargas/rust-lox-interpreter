@@ -59,7 +59,7 @@ impl Scanner<'_> {
                     // Didn't find the closing `"`...
                     Type::Error(token::Error::UnterminatedString)
                 } else {
-                    let s = String::from_utf8(self.bytes[start+1..end].to_vec());
+                    let s = String::from_utf8(self.bytes[start+1..=end-1].to_vec());
                     let s = s.unwrap();  // TODO: Add error token
                     Type::String(s)
                 }
@@ -80,8 +80,8 @@ impl Scanner<'_> {
             b"<" => self.decide_token(Type::Less, (Type::LessEqual, b"=")),
             b"/" => self.decide_token(Type::Slash, (Type::SlashSlash, b"/")),
             _digit if byte.is_ascii_digit() => {
-                let (is_f32, start, end) = self.measure_number();
-                let number = std::str::from_utf8(&self.bytes[start..end]);
+                let (is_f32, start, end_inclusive) = self.measure_number();
+                let number = std::str::from_utf8(&self.bytes[start..=end_inclusive]);
                 if is_f32 {
                     let n = number.unwrap().parse::<f32>().unwrap();
                     Type::Number(token::Literal::Float(n))
@@ -91,8 +91,8 @@ impl Scanner<'_> {
                 }
             }
             a if is_ascii_alphabetic(a) => {
-                let (start, end) = self.measure_word();
-                let word = &self.bytes[start..end];
+                let (start, end_inclusive) = self.measure_word();
+                let word = &self.bytes[start..=end_inclusive];
                 match word {
                     b"and" => Type::Keyword(token::Keyword::And),
                     b"class" => Type::Keyword(token::Keyword::Class),
@@ -121,22 +121,29 @@ impl Scanner<'_> {
         let mut is_f32 = false;
         let start = self.position;
         self.advance_until_not_ascii_digit();
+        self.advance();  // To read the next character
         if !self.is_at_end() && &[self.current_byte()] == b"." {
-            self.advance();
+            self.advance();  // Got to the `.`
+            self.advance();  // Skip the `.`
             self.advance_until_not_ascii_digit();
             is_f32 = true;
+        } else {
+            // There was no `.`; the current byte may be something else;
+            // go back to read it in the next iteration
+            self.position -= 1;
         }
-        let end = self.position;
-        (is_f32, start, end)
+        let end_inclusive = self.position;
+        (is_f32, start, end_inclusive)
     }
 
     fn measure_string(&mut self) -> (usize, usize) {
         let start = self.position;  // Includes the initial `"`
         self.advance();  // Skips the initial `"` again to avoid matching below
-        self.advance_until_find_any(&[b"\""]);  // Finds the final `"`
-        let end = self.position;  // Also includes the final `"`
+        self.advance_until_before_any(&[b"\""]);  // Stiops before the final `"`
+        self.advance();  // Advance to the final `"`
+        let end_inclusive = self.position;  // Also includes the final `"`
 
-        (start, end)
+        (start, end_inclusive)
     }
 
     fn measure_word(&mut self) -> (usize, usize) {
@@ -144,25 +151,29 @@ impl Scanner<'_> {
         while !self.is_at_end() && is_ascii_alphabetic(&[self.current_byte()]) {
             self.advance();
         }
-        let end = self.position;
+        self.position -= 1;
+        let end_inclusive = self.position;
 
-        (start, end)
+        (start, end_inclusive)
     }
 
     fn skip_current_line(&mut self) {
-        self.advance_until_find_any(&[b"\n"]);
+        self.advance_until_before_any(&[b"\n"]);
     }
 
-    fn advance_until_find_any(&mut self, bytes: &[&[u8; 1]]) {
+    fn advance_until_before_any(&mut self, bytes: &[&[u8; 1]]) {
         while !self.is_at_end() && !bytes.contains(&&[self.current_byte()]) {
             self.advance();
         }
+        self.position -= 1;
     }
 
     fn advance_until_not_ascii_digit(&mut self) {
         while !self.is_at_end() && self.current_byte().is_ascii_digit() {
             self.advance();
         }
+        self.position -= 1;
+        // The current byte is an ASCII digit; the next one isn't
     }
 
     fn decide_token(&mut self, simple_type: Type, compound_type: (Type, &[u8])) -> Type {
