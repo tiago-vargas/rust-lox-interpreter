@@ -23,12 +23,7 @@ impl Scanner<'_> {
             match token {
                 Token { r#type: Type::Whitespace } => {}
                 Token { r#type: Type::SlashSlash } => self.skip_current_line(),
-                token => {
-                    if token.is_compound() {
-                        self.advance();
-                    }
-                    tokens.push(token);
-                }
+                token => tokens.push(token),
             }
             self.advance();
         }

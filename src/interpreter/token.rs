@@ -16,29 +16,6 @@ impl Debug for Token {
     }
 }
 
-impl Token {
-    pub fn is_compound(&self) -> bool {
-        match self.r#type {
-            Type::LeftParen
-            | Type::RightParen
-            | Type::LeftBrace
-            | Type::RightBrace
-            | Type::Comma
-            | Type::Dot
-            | Type::Minus
-            | Type::Plus
-            | Type::Semicolon
-            | Type::Star
-            | Type::String(_)                // Not exactly...
-            | Type::Number(_)                // Not exactly...
-            | Type::Keyword(_)               // Not exactly...
-            | Type::Identifier(_) => false,  // Not exactly...
-
-            _ => true,
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub(crate) enum Type {
     LeftParen,
