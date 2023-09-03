@@ -506,41 +506,41 @@ mod tests {
         )
     }
 
-    // #[test]
-    // fn scans_identifiers() {
-    //     let code = "var fred = 5;";
+    #[test]
+    fn scans_identifiers() {
+        let code = "var fred = 5;";
 
-    //     let tokens = Scanner::new(code).scan_tokens();
+        let tokens = Scanner::new(code).scan_tokens();
 
-    //     assert_eq!(
-    //         tokens,
-    //         &[
-    //             Token { r#type: Type::Keyword(Keyword::Var) },
-    //             Token { r#type: Type::Identifier("fred".to_string()) },
-    //             Token { r#type: Type::Equal },
-    //             Token { r#type: Type::Number(Literal::Integer(5)) },
-    //             Token { r#type: Type::Semicolon },
-    //         ],
-    //     )
-    // }
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Keyword(Keyword::Var) },
+                Token { r#type: Type::Identifier("fred".to_string()) },
+                Token { r#type: Type::Equal },
+                Token { r#type: Type::Number(Literal::Integer(5)) },
+                Token { r#type: Type::Semicolon },
+            ],
+        )
+    }
 
-    // #[test]
-    // fn scans_identifiers_with_minimal_whitespace() {
-    //     let code = "var fred=5;";
+    #[test]
+    fn scans_identifiers_with_minimal_whitespace() {
+        let code = "var fred=5;";
 
-    //     let tokens = Scanner::new(code).scan_tokens();
+        let tokens = Scanner::new(code).scan_tokens();
 
-    //     assert_eq!(
-    //         tokens,
-    //         &[
-    //             Token { r#type: Type::Keyword(Keyword::Var) },
-    //             Token { r#type: Type::Identifier("fred".to_string()) },
-    //             Token { r#type: Type::Equal },
-    //             Token { r#type: Type::Number(Literal::Integer(5)) },
-    //             Token { r#type: Type::Semicolon },
-    //         ],
-    //     )
-    // }
+        assert_eq!(
+            tokens,
+            &[
+                Token { r#type: Type::Keyword(Keyword::Var) },
+                Token { r#type: Type::Identifier("fred".to_string()) },
+                Token { r#type: Type::Equal },
+                Token { r#type: Type::Number(Literal::Integer(5)) },
+                Token { r#type: Type::Semicolon },
+            ],
+        )
+    }
 
     // #[test]
     // fn shows_error_when_source_is_not_in_utf8() {
