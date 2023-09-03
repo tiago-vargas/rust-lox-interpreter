@@ -39,6 +39,10 @@ impl Scanner<'_> {
         self.bytes[self.position]
     }
 
+    fn next_byte(&mut self) -> Option<&u8> {
+        self.bytes.get(self.position + 1)
+    }
+
     fn advance(&mut self) {
         self.position += 1;
     }
@@ -162,8 +166,7 @@ impl Scanner<'_> {
     }
 
     fn decide_token(&mut self, simple_type: Type, compound_type: (Type, &[u8])) -> Type {
-        let next_byte = self.bytes.get(self.position + 1);
-        match next_byte {
+        match self.next_byte() {
             Some(&byte) => {
                 match byte {
                     b if compound_type.1 == &[b] => {
