@@ -1,4 +1,3 @@
-#[derive(Debug)]
 pub(crate) struct Token {
     pub(crate) r#type: Type,
 }
@@ -6,6 +5,12 @@ pub(crate) struct Token {
 impl PartialEq for Token {
     fn eq(&self, other: &Self) -> bool {
         self.r#type == other.r#type
+    }
+}
+
+impl std::fmt::Debug for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "⟨{:?}⟩", self.r#type)
     }
 }
 
