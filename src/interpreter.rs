@@ -9,16 +9,26 @@ impl Scanner {
         let mut tokens: Vec<Token> = vec![];
 
         let mut should_skip_iteration = false;
+        let mut should_skip_line = false;
         for (i, byte) in source.as_bytes().iter().enumerate() {
             if should_skip_iteration {
                 should_skip_iteration = false;
                 continue;
             }
 
+            if should_skip_line {
+                if &[*byte] != b"\n" {
+                    should_skip_iteration = true;
+                    continue;
+                }
+                should_skip_line = false;
+            }
+
             let next_byte = source.as_bytes().get(i + 1);
             let token = Self::identify_token(*byte, next_byte);
 
             match token {
+                Token { r#type: Type::SlashSlash } => should_skip_line = true,
                 Token { r#type: Type::Whitespace } => continue,
                 token => {
                     if token.is_compound() {
@@ -55,6 +65,15 @@ impl Scanner {
             b"=" => decide_token(Equal, EqualEqual, next_byte),
             b">" => decide_token(Greater, GreaterEqual, next_byte),
             b"<" => decide_token(Less, LessEqual, next_byte),
+            b"/" => match next_byte {
+                Some(&byte) => {
+                    match &[byte] {
+                        b"/" => Token { r#type: SlashSlash },
+                        _ => Token { r#type: Slash },
+                    }
+                },
+                None => Token { r#type: Slash },
+            },
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[byte])),
         }
     }
@@ -151,5 +170,63 @@ mod tests {
                 Token { r#type: LeftBrace },
             ],
         )
+    }
+
+    #[cfg(test)]
+    mod comments {
+        use super::*;
+
+        #[test]
+        fn does_not_scan_comment_glued_to_code() {
+            let code = "=//=";
+
+            let tokens = Scanner::scan_tokens(code);
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Equal },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_line_ending_with_comment() {
+            let code = "+ - * / =   // This is a comment! != > etc";
+
+            let tokens = Scanner::scan_tokens(code);
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Plus },
+                    Token { r#type: Minus },
+                    Token { r#type: Star },
+                    Token { r#type: Slash },
+                    Token { r#type: Equal },
+                ],
+            )
+        }
+
+        #[test]
+        pub(crate) fn scans_line_after_comment() {
+            let code = r#"
+            + -
+            // This is a comment!
+            - +
+            "#;
+
+            let tokens = Scanner::scan_tokens(code);
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Plus },
+                    Token { r#type: Minus },
+                    Token { r#type: Minus },
+                    Token { r#type: Plus },
+                ],
+            )
+        }
     }
 }
