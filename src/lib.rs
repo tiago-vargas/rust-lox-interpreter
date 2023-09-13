@@ -1,1 +1,1 @@
-mod lox;
+mod interpreter;
