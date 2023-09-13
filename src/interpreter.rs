@@ -37,7 +37,6 @@ impl Scanner {
                     tokens.push(token);
                 }
             }
-
         }
 
         tokens
@@ -61,38 +60,29 @@ impl Scanner {
             b"+" => Token { r#type: Plus },
             b";" => Token { r#type: Semicolon },
             b"*" => Token { r#type: Star },
-            b"!" => decide_token(Bang, BangEqual, next_byte),
-            b"=" => decide_token(Equal, EqualEqual, next_byte),
-            b">" => decide_token(Greater, GreaterEqual, next_byte),
-            b"<" => decide_token(Less, LessEqual, next_byte),
-            b"/" => match next_byte {
-                Some(&byte) => {
-                    match &[byte] {
-                        b"/" => Token { r#type: SlashSlash },
-                        _ => Token { r#type: Slash },
-                    }
-                },
-                None => Token { r#type: Slash },
-            },
+            b"!" => decide_token(Bang, (BangEqual, b"="), next_byte),
+            b"=" => decide_token(Equal, (EqualEqual, b"="), next_byte),
+            b">" => decide_token(Greater, (GreaterEqual, b"="), next_byte),
+            b"<" => decide_token(Less, (LessEqual, b"="), next_byte),
+            b"/" => decide_token(Slash, (SlashSlash, b"/"), next_byte),
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[byte])),
         }
     }
 }
 
-/// If `next_byte` is `b"="`, then returns `compound_type`,
-/// else returns `simple_type`
+/// # Arguments
+/// * `compound_type`: (`type`, `byte`)
 ///
-/// # Note
-/// Not generalized for any two tokens yet
-fn decide_token(simple_type: Type, compound_type: Type, next_byte: Option<&u8>) -> Token {
+/// Returns `type` if `next_byte` is `byte`, otherwise returns `simple_type`
+fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Token {
+    let expected_bytes = compound_type.1;
+    let compound_type = compound_type.0;
     match next_byte {
-        Some(&byte) => {
-            match &[byte] {
-                b"=" => Token { r#type: compound_type },
-                _ => Token { r#type: simple_type },
-            }
+        Some(&byte) if &[byte] == expected_bytes => Token {
+            r#type: compound_type,
         },
-        None => Token { r#type: simple_type },
+        Some(_)
+        | None => Token { r#type: simple_type, },
     }
 }
 
