@@ -2,45 +2,71 @@ mod token;
 
 use token::{Token, Type};
 
-struct Scanner;
+struct Scanner<'a> {
+    source: &'a str,
+    position: usize,
+}
 
-impl Scanner {
-    fn scan_tokens(source: &str) -> Vec<Token> {
+impl Scanner<'_> {
+    fn new(source: &str) -> Scanner {
+        Scanner { source, position: 0 }
+    }
+
+    fn scan_tokens(&mut self) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
 
-        let mut should_skip_iteration = false;
         let mut should_skip_line = false;
-        for (i, byte) in source.as_bytes().iter().enumerate() {
-            if should_skip_iteration {
-                should_skip_iteration = false;
-                continue;
-            }
-
+        while !self.is_at_end() {
             if should_skip_line {
-                if &[*byte] != b"\n" {
-                    should_skip_iteration = true;
+                if &[self.current_byte()] != b"\n" {
+                    self.advance();
                     continue;
                 }
                 should_skip_line = false;
             }
 
-            let next_byte = source.as_bytes().get(i + 1);
-            let r#type = Self::identify_token_type(*byte, next_byte);
+            let current_byte = self.current_byte();
+            let next_byte = self.next_byte();
+            let r#type = Self::identify_token_type(current_byte, next_byte);
             let token = Token { r#type };
 
             match token {
                 Token { r#type: Type::SlashSlash } => should_skip_line = true,
-                Token { r#type: Type::Whitespace } => continue,
+                Token { r#type: Type::Whitespace } => (),
                 token => {
                     if token.is_compound() {
-                        should_skip_iteration = true;
+                        self.advance();
                     }
                     tokens.push(token);
                 }
             }
+            self.advance();
         }
 
         tokens
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.position >= self.source.len()
+    }
+
+    fn current_byte(&self) -> u8 {
+        self.source.as_bytes()[self.position]
+    }
+
+    fn next_byte(&self) -> Option<&u8> {
+        self.source.as_bytes().get(self.position + 1)
+    }
+
+    fn advance(&mut self) {
+        self.position += 1;
+    }
+
+    /// Makes `self.position` be above the first occurrence of some byte in `bytes`.
+    fn seek(&mut self, byte: &[u8]) {
+        while !self.is_at_end() && byte != [self.current_byte()] {
+            self.advance();
+        }
     }
 
     fn identify_token_type(byte: u8, next_byte: Option<&u8>) -> Type {
@@ -94,7 +120,7 @@ mod tests {
     fn scans_simple_unnambiguous_tokens() {
         let code = "(){},.-+;*";
 
-        let tokens = Scanner::scan_tokens(code);
+        let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
@@ -118,7 +144,7 @@ mod tests {
     fn scans_ambiguous_tokens() {
         let code = "!= ! == = > >= < <=";
 
-        let tokens = Scanner::scan_tokens(code);
+        let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
@@ -144,7 +170,7 @@ mod tests {
             }\n{
         ";
 
-        let tokens = Scanner::scan_tokens(code);
+        let tokens = Scanner::new(code).scan_tokens();
 
         assert_eq!(
             tokens,
@@ -169,7 +195,7 @@ mod tests {
         fn does_not_scan_comment_glued_to_code() {
             let code = "=//=";
 
-            let tokens = Scanner::scan_tokens(code);
+            let tokens = Scanner::new(code).scan_tokens();
 
             assert_eq!(
                 tokens,
@@ -183,7 +209,7 @@ mod tests {
         fn scans_line_ending_with_comment() {
             let code = "+ - * / =   // This is a comment! != > etc";
 
-            let tokens = Scanner::scan_tokens(code);
+            let tokens = Scanner::new(code).scan_tokens();
 
             assert_eq!(
                 tokens,
@@ -205,7 +231,7 @@ mod tests {
             - +
             "#;
 
-            let tokens = Scanner::scan_tokens(code);
+            let tokens = Scanner::new(code).scan_tokens();
 
             assert_eq!(
                 tokens,
