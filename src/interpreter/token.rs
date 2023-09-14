@@ -14,6 +14,29 @@ impl std::fmt::Debug for Token {
     }
 }
 
+impl Token {
+    pub fn is_compound(&self) -> bool {
+        match self.r#type {
+            Type::LeftParen
+            | Type::RightParen
+            | Type::LeftBrace
+            | Type::RightBrace
+            | Type::Comma
+            | Type::Dot
+            | Type::Minus
+            | Type::Plus
+            | Type::Semicolon
+            | Type::Star
+            | Type::Equal
+            | Type::Bang
+            | Type::Greater
+            | Type::Less => false,
+
+            _ => true,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub(crate) enum Type {
     LeftParen,
@@ -26,4 +49,17 @@ pub(crate) enum Type {
     Plus,
     Semicolon,
     Star,
+
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+
+    Slash,
+    SlashSlash,  // Only for internal use
+    Whitespace,  // Only for internal use
 }
