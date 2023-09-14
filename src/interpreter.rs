@@ -25,7 +25,8 @@ impl Scanner {
             }
 
             let next_byte = source.as_bytes().get(i + 1);
-            let token = Self::identify_token(*byte, next_byte);
+            let r#type = Self::identify_token_type(*byte, next_byte);
+            let token = Token { r#type };
 
             match token {
                 Token { r#type: Type::SlashSlash } => should_skip_line = true,
@@ -42,29 +43,29 @@ impl Scanner {
         tokens
     }
 
-    fn identify_token(byte: u8, next_byte: Option<&u8>) -> Token {
+    fn identify_token_type(byte: u8, next_byte: Option<&u8>) -> Type {
         use Type::*;
 
         match &[byte] {
             b" "
             | b"\t"
             | b"\r"
-            | b"\n" => Token { r#type: Whitespace },
-            b"(" => Token { r#type: LeftParen },
-            b")" => Token { r#type: RightParen },
-            b"{" => Token { r#type: LeftBrace },
-            b"}" => Token { r#type: RightBrace },
-            b"," => Token { r#type: Comma },
-            b"." => Token { r#type: Dot },
-            b"-" => Token { r#type: Minus },
-            b"+" => Token { r#type: Plus },
-            b";" => Token { r#type: Semicolon },
-            b"*" => Token { r#type: Star },
-            b"!" => decide_token(Bang, (BangEqual, b"="), next_byte),
-            b"=" => decide_token(Equal, (EqualEqual, b"="), next_byte),
-            b">" => decide_token(Greater, (GreaterEqual, b"="), next_byte),
-            b"<" => decide_token(Less, (LessEqual, b"="), next_byte),
-            b"/" => decide_token(Slash, (SlashSlash, b"/"), next_byte),
+            | b"\n" => Whitespace,
+            b"(" => LeftParen,
+            b")" => RightParen,
+            b"{" => LeftBrace,
+            b"}" => RightBrace,
+            b"," => Comma,
+            b"." => Dot,
+            b"-" => Minus,
+            b"+" => Plus,
+            b";" => Semicolon,
+            b"*" => Star,
+            b"!" => decide_token_type(Bang, (BangEqual, b"="), next_byte),
+            b"=" => decide_token_type(Equal, (EqualEqual, b"="), next_byte),
+            b">" => decide_token_type(Greater, (GreaterEqual, b"="), next_byte),
+            b"<" => decide_token_type(Less, (LessEqual, b"="), next_byte),
+            b"/" => decide_token_type(Slash, (SlashSlash, b"/"), next_byte),
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[byte])),
         }
     }
@@ -74,15 +75,13 @@ impl Scanner {
 /// * `compound_type`: (`type`, `byte`)
 ///
 /// Returns `type` if `next_byte` is `byte`, otherwise returns `simple_type`
-fn decide_token(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Token {
+fn decide_token_type(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Type {
     let expected_bytes = compound_type.1;
     let compound_type = compound_type.0;
     match next_byte {
-        Some(&byte) if &[byte] == expected_bytes => Token {
-            r#type: compound_type,
-        },
+        Some(&byte) if &[byte] == expected_bytes => compound_type,
         Some(_)
-        | None => Token { r#type: simple_type, },
+        | None => simple_type,
     }
 }
 
