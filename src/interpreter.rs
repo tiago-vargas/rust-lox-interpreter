@@ -199,7 +199,7 @@ mod tests {
         }
 
         #[test]
-        pub(crate) fn scans_line_after_comment() {
+        fn scans_line_after_comment() {
             let code = r#"
             + -
             // This is a comment!
