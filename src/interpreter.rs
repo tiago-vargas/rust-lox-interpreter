@@ -5,13 +5,13 @@ use std::ops::{Range, RangeInclusive};
 use token::{Token, Type};
 
 struct Scanner<'a> {
-    source: &'a str,
+    bytes: &'a [u8],
     position: usize,
 }
 
 impl Scanner<'_> {
     fn new(source: &str) -> Scanner {
-        Scanner { source, position: 0 }
+        Scanner { bytes: source.as_bytes(), position: 0 }
     }
 
     fn scan_tokens(&mut self) -> Vec<Token> {
@@ -38,15 +38,15 @@ impl Scanner<'_> {
     }
 
     fn is_at_end(&self) -> bool {
-        self.position >= self.source.len()
+        self.position >= self.bytes.len()
     }
 
     fn current_byte(&self) -> u8 {
-        self.source.as_bytes()[self.position]
+        self.bytes[self.position]
     }
 
     fn next_byte(&self) -> Option<&u8> {
-        self.source.as_bytes().get(self.position + 1)
+        self.bytes.get(self.position + 1)
     }
 
     fn advance(&mut self) {
@@ -78,7 +78,7 @@ impl Scanner<'_> {
                     // Didn't find the closing `"`...
                     Type::Error(token::Error::UnterminatedString)
                 } else {
-                    let s = String::from_utf8(self.source.as_bytes()[range].to_vec());
+                    let s = String::from_utf8(self.bytes[range].to_vec());
                     let s = s.unwrap();  // TODO: Add error token
                     StringLiteral(s)
                 }
@@ -100,7 +100,7 @@ impl Scanner<'_> {
             b"/" => decide_token_type(Slash, (SlashSlash, b"/"), self.next_byte()),
             [digit] if digit.is_ascii_digit() => {
                 let (is_f64, range) = self.measure_number();
-                let number = std::str::from_utf8(&self.source.as_bytes()[range]);
+                let number = std::str::from_utf8(&self.bytes[range]);
                 if is_f64 {
                     let n = number.unwrap().parse::<f64>().unwrap();
                     Type::NumberLiteral(token::Literal::Float(n))
