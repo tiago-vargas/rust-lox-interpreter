@@ -1,5 +1,7 @@
 mod token;
 
+use std::ops::RangeInclusive;
+
 use token::{Token, Type};
 
 struct Scanner<'a> {
@@ -62,7 +64,7 @@ impl Scanner<'_> {
         self.seek(b"\n");
     }
 
-    fn identify_token_type(&self) -> Type {
+    fn identify_token_type(&mut self) -> Type {
         use Type::*;
 
         match &[self.current_byte()] {
@@ -70,6 +72,17 @@ impl Scanner<'_> {
             | b"\t"
             | b"\r"
             | b"\n" => Whitespace,
+            b"\"" => {
+                let range = self.measure_string();
+                if self.is_at_end() {
+                    // Didn't find the closing `"`...
+                    Type::Error(token::Error::UnterminatedString)
+                } else {
+                    let s = String::from_utf8(self.source.as_bytes()[range].to_vec());
+                    let s = s.unwrap();  // TODO: Add error token
+                    StringLiteral(s)
+                }
+            }
             b"(" => LeftParen,
             b")" => RightParen,
             b"{" => LeftBrace,
@@ -87,6 +100,22 @@ impl Scanner<'_> {
             b"/" => decide_token_type(Slash, (SlashSlash, b"/"), self.next_byte()),
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
         }
+    }
+
+    /// Advances the position and stops over the left quote.
+    ///
+    /// Should be called when the position is above the right quote.
+    ///
+    /// Returns the range of the string without its quotes.
+    fn measure_string(&mut self) -> RangeInclusive<usize> {
+        let start = self.position;  // Includes the initial `"`
+        self.advance();  // Skips the initial `"` again to avoid matching below
+
+        // Finds the final `"` and stops over it
+        self.seek(b"\"");
+        let end_inclusive = self.position;  // Also includes the final `"`
+
+        start+1..=end_inclusive-1  // Trims both quotes
     }
 }
 
@@ -233,6 +262,79 @@ mod tests {
                     Token { r#type: Minus },
                     Token { r#type: Minus },
                     Token { r#type: Plus },
+                ],
+            )
+        }
+    }
+
+    mod strings {
+        use super::*;
+
+        #[test]
+        fn scans_lone_strings() {
+            let code = r#""This is a string!""#;
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Type::StringLiteral("This is a string!".to_string()) },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_strings() {
+            let code = r#"+ - "This is a string!" - +"#;
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Type::Plus },
+                    Token { r#type: Type::Minus },
+                    Token { r#type: Type::StringLiteral("This is a string!".to_string()) },
+                    Token { r#type: Type::Minus },
+                    Token { r#type: Type::Plus },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_multiline_strings() {
+            let code = r#"
+                + - "This is a string!
+                And it is still going!"
+                - +"#;
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Type::Plus },
+                    Token { r#type: Type::Minus },
+                    Token { r#type: Type::StringLiteral("This is a string!\n                And it is still going!".to_string()) },
+                    Token { r#type: Type::Minus },
+                    Token { r#type: Type::Plus },
+                ],
+            )
+        }
+
+        #[test]
+        fn detects_unterminated_strings() {
+            let code = r#"+ - "This is a string! And it's missing the closing quote..."#;
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Plus },
+                    Token { r#type: Minus },
+                    Token { r#type: Error(token::Error::UnterminatedString) },
                 ],
             )
         }

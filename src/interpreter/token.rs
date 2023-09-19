@@ -30,7 +30,8 @@ impl Token {
             | Type::Equal
             | Type::Bang
             | Type::Greater
-            | Type::Less => false,
+            | Type::Less
+            | Type::StringLiteral(_) => false,  // Not exactly...
 
             _ => true,
         }
@@ -62,4 +63,13 @@ pub(crate) enum Type {
     Slash,
     SlashSlash,  // Only for internal use
     Whitespace,  // Only for internal use
+
+    StringLiteral(String),
+
+    Error(Error),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Error {
+    UnterminatedString,
 }
