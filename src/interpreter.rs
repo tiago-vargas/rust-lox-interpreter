@@ -16,9 +16,7 @@ impl Scanner<'_> {
         let mut tokens: Vec<Token> = vec![];
 
         while !self.is_at_end() {
-            let current_byte = self.current_byte();
-            let next_byte = self.next_byte();
-            let r#type = Self::identify_token_type(current_byte, next_byte);
+            let r#type = self.identify_token_type();
             let token = Token { r#type };
 
             match token {
@@ -64,10 +62,10 @@ impl Scanner<'_> {
         self.seek(b"\n");
     }
 
-    fn identify_token_type(byte: u8, next_byte: Option<&u8>) -> Type {
+    fn identify_token_type(&self) -> Type {
         use Type::*;
 
-        match &[byte] {
+        match &[self.current_byte()] {
             b" "
             | b"\t"
             | b"\r"
@@ -82,12 +80,12 @@ impl Scanner<'_> {
             b"+" => Plus,
             b";" => Semicolon,
             b"*" => Star,
-            b"!" => decide_token_type(Bang, (BangEqual, b"="), next_byte),
-            b"=" => decide_token_type(Equal, (EqualEqual, b"="), next_byte),
-            b">" => decide_token_type(Greater, (GreaterEqual, b"="), next_byte),
-            b"<" => decide_token_type(Less, (LessEqual, b"="), next_byte),
-            b"/" => decide_token_type(Slash, (SlashSlash, b"/"), next_byte),
-            _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[byte])),
+            b"!" => decide_token_type(Bang, (BangEqual, b"="), self.next_byte()),
+            b"=" => decide_token_type(Equal, (EqualEqual, b"="), self.next_byte()),
+            b">" => decide_token_type(Greater, (GreaterEqual, b"="), self.next_byte()),
+            b"<" => decide_token_type(Less, (LessEqual, b"="), self.next_byte()),
+            b"/" => decide_token_type(Slash, (SlashSlash, b"/"), self.next_byte()),
+            _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
         }
     }
 }
