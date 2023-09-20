@@ -72,17 +72,7 @@ impl Scanner<'_> {
             | b"\t"
             | b"\r"
             | b"\n" => Whitespace,
-            b"\"" => {
-                let range = self.measure_string();
-                if self.is_at_end() {
-                    // Didn't find the closing `"`...
-                    Type::Error(token::Error::UnterminatedString)
-                } else {
-                    let s = String::from_utf8(self.bytes[range].to_vec());
-                    let s = s.unwrap();  // TODO: Add error token
-                    StringLiteral(s)
-                }
-            }
+            b"\"" => self.treat_string(),
             b"(" => LeftParen,
             b")" => RightParen,
             b"{" => LeftBrace,
@@ -98,18 +88,32 @@ impl Scanner<'_> {
             b">" => decide_token_type(Greater, (GreaterEqual, b"="), self.next_byte()),
             b"<" => decide_token_type(Less, (LessEqual, b"="), self.next_byte()),
             b"/" => decide_token_type(Slash, (SlashSlash, b"/"), self.next_byte()),
-            [digit] if digit.is_ascii_digit() => {
-                let (is_f64, range) = self.measure_number();
-                let number = std::str::from_utf8(&self.bytes[range]);
-                if is_f64 {
-                    let n = number.unwrap().parse::<f64>().unwrap();
-                    Type::NumberLiteral(token::NumberLiteral::Float(n))
-                } else {
-                    let n = number.unwrap().parse::<i32>().unwrap();
-                    Type::NumberLiteral(token::NumberLiteral::Integer(n))
-                }
-            }
+            [digit] if digit.is_ascii_digit() => self.treat_number(),
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
+        }
+    }
+
+    fn treat_string(&mut self) -> Type {
+        let range = self.measure_string();
+        if self.is_at_end() {
+            // Didn't find the closing `"`...
+            Type::Error(token::Error::UnterminatedString)
+        } else {
+            let s = String::from_utf8(self.bytes[range].to_vec());
+            let s = s.unwrap();  // TODO: Add error token
+            Type::StringLiteral(s)
+        }
+    }
+
+    fn treat_number(&mut self) -> Type {
+        let (is_f64, range) = self.measure_number();
+        let number = std::str::from_utf8(&self.bytes[range]);
+        if is_f64 {
+            let n = number.unwrap().parse::<f64>().unwrap();
+            Type::NumberLiteral(token::NumberLiteral::Float(n))
+        } else {
+            let n = number.unwrap().parse::<i32>().unwrap();
+            Type::NumberLiteral(token::NumberLiteral::Integer(n))
         }
     }
 
