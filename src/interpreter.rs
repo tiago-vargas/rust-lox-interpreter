@@ -313,7 +313,7 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: Type::StringLiteral("This is a string!".to_string()) },
+                    Token { r#type: StringLiteral("This is a string!".to_string()) },
                 ],
             )
         }
@@ -327,11 +327,11 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: Type::Plus },
-                    Token { r#type: Type::Minus },
-                    Token { r#type: Type::StringLiteral("This is a string!".to_string()) },
-                    Token { r#type: Type::Minus },
-                    Token { r#type: Type::Plus },
+                    Token { r#type: Plus },
+                    Token { r#type: Minus },
+                    Token { r#type: StringLiteral("This is a string!".to_string()) },
+                    Token { r#type: Minus },
+                    Token { r#type: Plus },
                 ],
             )
         }
@@ -348,11 +348,11 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: Type::Plus },
-                    Token { r#type: Type::Minus },
-                    Token { r#type: Type::StringLiteral("This is a string!\n                And it is still going!".to_string()) },
-                    Token { r#type: Type::Minus },
-                    Token { r#type: Type::Plus },
+                    Token { r#type: Plus },
+                    Token { r#type: Minus },
+                    Token { r#type: StringLiteral("This is a string!\n                And it is still going!".to_string()) },
+                    Token { r#type: Minus },
+                    Token { r#type: Plus },
                 ],
             )
         }
@@ -386,7 +386,7 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: Type::NumberLiteral(Literal::Integer(123)) },
+                    Token { r#type: NumberLiteral(Literal::Integer(123)) },
                 ],
             )
         }
@@ -400,11 +400,11 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: Type::NumberLiteral(Literal::Integer(0)) },
-                    Token { r#type: Type::Plus },
-                    Token { r#type: Type::NumberLiteral(Literal::Integer(123)) },
-                    Token { r#type: Type::Minus },
-                    Token { r#type: Type::NumberLiteral(Literal::Integer(1)) },
+                    Token { r#type: NumberLiteral(Literal::Integer(0)) },
+                    Token { r#type: Plus },
+                    Token { r#type: NumberLiteral(Literal::Integer(123)) },
+                    Token { r#type: Minus },
+                    Token { r#type: NumberLiteral(Literal::Integer(1)) },
                 ],
             )
         }
@@ -422,7 +422,7 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: Type::NumberLiteral(Literal::Float(12.3)) },
+                    Token { r#type: NumberLiteral(Literal::Float(12.3)) },
                 ],
             )
         }
