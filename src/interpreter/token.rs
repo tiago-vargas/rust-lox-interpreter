@@ -66,13 +66,13 @@ pub(crate) enum Type {
     Whitespace,  // Only for internal use
 
     StringLiteral(String),
-    NumberLiteral(Literal),
+    NumberLiteral(NumberLiteral),
 
     Error(Error),
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum Literal {
+pub(crate) enum NumberLiteral {
     Integer(i32),
     Float(f64),
 }

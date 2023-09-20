@@ -103,10 +103,10 @@ impl Scanner<'_> {
                 let number = std::str::from_utf8(&self.bytes[range]);
                 if is_f64 {
                     let n = number.unwrap().parse::<f64>().unwrap();
-                    Type::NumberLiteral(token::Literal::Float(n))
+                    Type::NumberLiteral(token::NumberLiteral::Float(n))
                 } else {
                     let n = number.unwrap().parse::<i32>().unwrap();
-                    Type::NumberLiteral(token::Literal::Integer(n))
+                    Type::NumberLiteral(token::NumberLiteral::Integer(n))
                 }
             }
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
@@ -168,7 +168,7 @@ fn decide_token_type(simple_type: Type, compound_type: (Type, &[u8]), next_byte:
 #[cfg(test)]
 mod tests {
     use super::token::Type::*;
-    use crate::interpreter::token::Literal;
+    use crate::interpreter::token::NumberLiteral;
 
     use super::*;
 
@@ -386,7 +386,7 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: NumberLiteral(Literal::Integer(123)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
                 ],
             )
         }
@@ -400,11 +400,11 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: NumberLiteral(Literal::Integer(0)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
                     Token { r#type: Plus },
-                    Token { r#type: NumberLiteral(Literal::Integer(123)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
                     Token { r#type: Minus },
-                    Token { r#type: NumberLiteral(Literal::Integer(1)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(1)) },
                 ],
             )
         }
@@ -422,7 +422,7 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: NumberLiteral(Literal::Float(12.3)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
                 ],
             )
         }
@@ -436,11 +436,11 @@ mod tests {
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: NumberLiteral(Literal::Integer(0)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
                     Token { r#type: Plus },
-                    Token { r#type: NumberLiteral(Literal::Float(12.3)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
                     Token { r#type: Slash },
-                    Token { r#type: NumberLiteral(Literal::Integer(5)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
                 ],
             )
         }
