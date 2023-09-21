@@ -172,7 +172,7 @@ fn decide_token_type(simple_type: Type, compound_type: (Type, &[u8]), next_byte:
 #[cfg(test)]
 mod tests {
     use super::token::Type::*;
-    use crate::interpreter::token::NumberLiteral;
+    use crate::interpreter::token::*;
 
     use super::*;
 
@@ -372,7 +372,7 @@ mod tests {
                 &[
                     Token { r#type: Plus },
                     Token { r#type: Minus },
-                    Token { r#type: Error(token::Error::UnterminatedString) },
+                    Token { r#type: Error(Error::UnterminatedString) },
                 ],
             )
         }
