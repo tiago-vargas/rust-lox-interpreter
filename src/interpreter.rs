@@ -1,6 +1,6 @@
 mod token;
 
-use std::ops::{Range, RangeInclusive};
+use std::ops::RangeInclusive;
 
 use token::{Token, Type};
 
@@ -152,17 +152,19 @@ impl Scanner<'_> {
         start+1..=end_inclusive-1  // Trims both quotes
     }
 
-    fn measure_number(&mut self) -> (bool, Range<usize>) {
+    fn measure_number(&mut self) -> (bool, RangeInclusive<usize>) {
         let mut is_float = false;
         let start = self.position;
         self.advance_until_not_ascii_digit();
         if !self.is_at_end() && &[self.current_byte()] == b"." {
-            self.advance();
+            self.advance();  // Skips the `.`
             self.advance_until_not_ascii_digit();
             is_float = true;
         }
-        let end_exclusive = self.position;
-        let range = start..end_exclusive;
+
+        self.position -= 1;  // `advance_until_not_ascii_digit` stops **after** the number
+        let end_inclusive = self.position;
+        let range = start..=end_inclusive;
 
         (is_float, range)
     }
