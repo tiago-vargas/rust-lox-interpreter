@@ -53,7 +53,8 @@ impl Scanner<'_> {
         self.position += 1;
     }
 
-    /// Makes `self.position` be above the first occurrence of some byte in `bytes`.
+    /// Makes `self.position` be above the first occurrence of `byte` from
+    /// `self.position` onwards.
     fn seek(&mut self, byte: &[u8]) {
         while !self.is_at_end() && byte != [self.current_byte()] {
             self.advance();
