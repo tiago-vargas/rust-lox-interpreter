@@ -85,29 +85,7 @@ impl Scanner<'_> {
             b"<" => self.decide_token_type(Less, (LessEqual, b"=")),
             b"/" => self.decide_token_type(Slash, (SlashSlash, b"/")),
             [digit] if digit.is_ascii_digit() => self.treat_number(),
-            &[a] if a.is_ascii_alphabetic() || a == b'_' => {
-                let range = self.measure_word();
-                let word = &self.bytes[range];
-                match word {
-                    b"and" => Keyword(token::Keyword::And),
-                    b"class" => Keyword(token::Keyword::Class),
-                    b"else" => Keyword(token::Keyword::Else),
-                    b"false" => Keyword(token::Keyword::False),
-                    b"for" => Keyword(token::Keyword::For),
-                    b"fun" => Keyword(token::Keyword::Fun),
-                    b"if" => Keyword(token::Keyword::If),
-                    b"nil" => Keyword(token::Keyword::Nil),
-                    b"or" => Keyword(token::Keyword::Or),
-                    b"print" => Keyword(token::Keyword::Print),
-                    b"return" => Keyword(token::Keyword::Return),
-                    b"super" => Keyword(token::Keyword::Super),
-                    b"this" => Keyword(token::Keyword::This),
-                    b"true" => Keyword(token::Keyword::True),
-                    b"var" => Keyword(token::Keyword::Var),
-                    b"while" => Keyword(token::Keyword::While),
-                    bytes => Type::Identifier(String::from_utf8(bytes.to_vec()).unwrap()),
-                }
-            }
+            &[a] if a.is_ascii_alphabetic() || a == b'_' => self.treat_word(),
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
         }
     }
@@ -133,6 +111,32 @@ impl Scanner<'_> {
         } else {
             let n = number.unwrap().parse::<i32>().unwrap();
             Type::NumberLiteral(token::NumberLiteral::Integer(n))
+        }
+    }
+
+    fn treat_word(&mut self) -> Type {
+        use Type::Keyword;
+
+        let range = self.measure_word();
+        let word = &self.bytes[range];
+        match word {
+            b"and" => Keyword(token::Keyword::And),
+            b"class" => Keyword(token::Keyword::Class),
+            b"else" => Keyword(token::Keyword::Else),
+            b"false" => Keyword(token::Keyword::False),
+            b"for" => Keyword(token::Keyword::For),
+            b"fun" => Keyword(token::Keyword::Fun),
+            b"if" => Keyword(token::Keyword::If),
+            b"nil" => Keyword(token::Keyword::Nil),
+            b"or" => Keyword(token::Keyword::Or),
+            b"print" => Keyword(token::Keyword::Print),
+            b"return" => Keyword(token::Keyword::Return),
+            b"super" => Keyword(token::Keyword::Super),
+            b"this" => Keyword(token::Keyword::This),
+            b"true" => Keyword(token::Keyword::True),
+            b"var" => Keyword(token::Keyword::Var),
+            b"while" => Keyword(token::Keyword::While),
+            bytes => Type::Identifier(String::from_utf8(bytes.to_vec()).unwrap()),
         }
     }
 
