@@ -413,26 +413,84 @@ mod tests {
         }
     }
 
-    mod integers {
+    mod numbers {
         use super::*;
 
-        #[test]
-        fn scans_lone_integers() {
-            let code = "123";
+        mod integers {
+            use super::*;
 
-            let tokens = Scanner::new(code).scan_tokens();
+            #[test]
+            fn scans_lone_integers() {
+                let code = "123";
 
-            assert_eq!(
-                tokens,
-                &[
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
-                ],
-            )
+                let tokens = Scanner::new(code).scan_tokens();
+
+                assert_eq!(
+                    tokens,
+                    &[
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
+                    ],
+                )
+            }
+
+            #[test]
+            fn scans_integers() {
+                let code = "0 + 123 - 1";
+
+                let tokens = Scanner::new(code).scan_tokens();
+
+                assert_eq!(
+                    tokens,
+                    &[
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
+                        Token { r#type: Plus },
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
+                        Token { r#type: Minus },
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(1)) },
+                    ],
+                )
+            }
+        }
+
+        mod floats {
+            use super::*;
+
+            #[test]
+            fn scans_lone_floats() {
+                let code = "12.3";
+
+                let tokens = Scanner::new(code).scan_tokens();
+
+                assert_eq!(
+                    tokens,
+                    &[
+                        Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
+                    ],
+                )
+            }
+
+            #[test]
+            fn scans_floats() {
+                let code = "0 + 12.3 / 5";
+
+                let tokens = Scanner::new(code).scan_tokens();
+
+                assert_eq!(
+                    tokens,
+                    &[
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
+                        Token { r#type: Plus },
+                        Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
+                        Token { r#type: Slash },
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
+                    ],
+                )
+            }
         }
 
         #[test]
-        fn scans_integers() {
-            let code = "0 + 123 - 1";
+        fn scans_numbers_without_whitespace() {
+            let code = "0+12.3!=5.77";
 
             let tokens = Scanner::new(code).scan_tokens();
 
@@ -441,45 +499,9 @@ mod tests {
                 &[
                     Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
                     Token { r#type: Plus },
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
-                    Token { r#type: Minus },
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(1)) },
-                ],
-            )
-        }
-    }
-
-    mod floats {
-        use super::*;
-
-        #[test]
-        fn scans_lone_floats() {
-            let code = "12.3";
-
-            let tokens = Scanner::new(code).scan_tokens();
-
-            assert_eq!(
-                tokens,
-                &[
                     Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
-                ],
-            )
-        }
-
-        #[test]
-        fn scans_floats() {
-            let code = "0 + 12.3 / 5";
-
-            let tokens = Scanner::new(code).scan_tokens();
-
-            assert_eq!(
-                tokens,
-                &[
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
-                    Token { r#type: Plus },
-                    Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
-                    Token { r#type: Slash },
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
+                    Token { r#type: BangEqual },
+                    Token { r#type: NumberLiteral(NumberLiteral::Float(5.77)) },
                 ],
             )
         }
