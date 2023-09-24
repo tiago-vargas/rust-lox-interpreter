@@ -85,7 +85,7 @@ impl Scanner<'_> {
             b"<" => self.decide_token_type(Less, (LessEqual, b"=")),
             b"/" => self.decide_token_type(Slash, (SlashSlash, b"/")),
             [digit] if digit.is_ascii_digit() => self.treat_number(),
-            [a] if a.is_ascii_alphabetic() => {
+            &[a] if a.is_ascii_alphabetic() || a == b'_' => {
                 let range = self.measure_word();
                 let word = &self.bytes[range];
                 match word {
@@ -105,7 +105,7 @@ impl Scanner<'_> {
                     b"true" => Keyword(token::Keyword::True),
                     b"var" => Keyword(token::Keyword::Var),
                     b"while" => Keyword(token::Keyword::While),
-                    _ => todo!("Found `{}`", std::str::from_utf8(word).unwrap()),
+                    bytes => Type::Identifier(String::from_utf8(bytes.to_vec()).unwrap()),
                 }
             }
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
@@ -171,7 +171,7 @@ impl Scanner<'_> {
 
     fn measure_word(&mut self) -> RangeInclusive<usize> {
         let start = self.position;
-        while !self.is_at_end() && self.current_byte().is_ascii_alphabetic() {
+        while !self.is_at_end() && (self.current_byte().is_ascii_alphanumeric() || self.current_byte() == b'_') {
             self.advance();
         }
         self.position -= 1;
@@ -545,6 +545,77 @@ mod tests {
                 &[
                     Token { r#type: Keyword(Keyword::Fun) },
                     Token { r#type: Keyword(Keyword::Var) },
+                ],
+            )
+        }
+    }
+
+    mod identifiers {
+        use super::*;
+
+        #[test]
+        fn scans_identifiers() {
+            let code = "var fred = 5;";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Keyword(Keyword::Var) },
+                    Token { r#type: Identifier("fred".to_string()) },
+                    Token { r#type: Equal },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
+                    Token { r#type: Semicolon },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_identifiers_with_minimal_whitespace() {
+            let code = "var fred=5;";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Keyword(Keyword::Var) },
+                    Token { r#type: Identifier("fred".to_string()) },
+                    Token { r#type: Equal },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
+                    Token { r#type: Semicolon },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_function_declaration() {
+            let code = r#"
+                fun foo_bar_1(x, y) {
+                    return x + y;
+                }
+            "#;
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Keyword(Keyword::Fun) },
+                    Token { r#type: Identifier("foo_bar_1".to_string()) },
+                    Token { r#type: LeftParen },
+                    Token { r#type: Identifier("x".to_string()) },
+                    Token { r#type: Comma },
+                    Token { r#type: Identifier("y".to_string()) },
+                    Token { r#type: RightParen },
+                    Token { r#type: LeftBrace },
+                    Token { r#type: Keyword(Keyword::Return) },
+                    Token { r#type: Identifier("x".to_string()) },
+                    Token { r#type: Plus },
+                    Token { r#type: Identifier("y".to_string()) },
+                    Token { r#type: Semicolon },
+                    Token { r#type: RightBrace },
                 ],
             )
         }
