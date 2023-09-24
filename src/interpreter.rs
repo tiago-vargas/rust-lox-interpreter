@@ -1,6 +1,6 @@
 mod token;
 
-use std::ops::{Range, RangeInclusive};
+use std::ops::RangeInclusive;
 
 use token::{Token, Type};
 
@@ -24,12 +24,7 @@ impl Scanner<'_> {
             match token {
                 Token { r#type: Type::SlashSlash } => self.skip_current_line(),
                 Token { r#type: Type::Whitespace } => (),
-                token => {
-                    if token.is_compound() {
-                        self.advance();
-                    }
-                    tokens.push(token);
-                }
+                token => tokens.push(token),
             }
             self.advance();
         }
@@ -53,7 +48,8 @@ impl Scanner<'_> {
         self.position += 1;
     }
 
-    /// Makes `self.position` be above the first occurrence of some byte in `bytes`.
+    /// Makes `self.position` be above the first occurrence of `byte` from
+    /// `self.position` onwards.
     fn seek(&mut self, byte: &[u8]) {
         while !self.is_at_end() && byte != [self.current_byte()] {
             self.advance();
@@ -83,12 +79,13 @@ impl Scanner<'_> {
             b"+" => Plus,
             b";" => Semicolon,
             b"*" => Star,
-            b"!" => decide_token_type(Bang, (BangEqual, b"="), self.next_byte()),
-            b"=" => decide_token_type(Equal, (EqualEqual, b"="), self.next_byte()),
-            b">" => decide_token_type(Greater, (GreaterEqual, b"="), self.next_byte()),
-            b"<" => decide_token_type(Less, (LessEqual, b"="), self.next_byte()),
-            b"/" => decide_token_type(Slash, (SlashSlash, b"/"), self.next_byte()),
+            b"!" => self.decide_token_type(Bang, (BangEqual, b"=")),
+            b"=" => self.decide_token_type(Equal, (EqualEqual, b"=")),
+            b">" => self.decide_token_type(Greater, (GreaterEqual, b"=")),
+            b"<" => self.decide_token_type(Less, (LessEqual, b"=")),
+            b"/" => self.decide_token_type(Slash, (SlashSlash, b"/")),
             [digit] if digit.is_ascii_digit() => self.treat_number(),
+            &[a] if a.is_ascii_alphabetic() || a == b'_' => self.treat_word(),
             _ => todo!("Unexpected lexeme {:#?}", std::str::from_utf8(&[self.current_byte()])),
         }
     }
@@ -117,6 +114,32 @@ impl Scanner<'_> {
         }
     }
 
+    fn treat_word(&mut self) -> Type {
+        use Type::Keyword;
+
+        let range = self.measure_word();
+        let word = &self.bytes[range];
+        match word {
+            b"and" => Keyword(token::Keyword::And),
+            b"class" => Keyword(token::Keyword::Class),
+            b"else" => Keyword(token::Keyword::Else),
+            b"false" => Keyword(token::Keyword::False),
+            b"for" => Keyword(token::Keyword::For),
+            b"fun" => Keyword(token::Keyword::Fun),
+            b"if" => Keyword(token::Keyword::If),
+            b"nil" => Keyword(token::Keyword::Nil),
+            b"or" => Keyword(token::Keyword::Or),
+            b"print" => Keyword(token::Keyword::Print),
+            b"return" => Keyword(token::Keyword::Return),
+            b"super" => Keyword(token::Keyword::Super),
+            b"this" => Keyword(token::Keyword::This),
+            b"true" => Keyword(token::Keyword::True),
+            b"var" => Keyword(token::Keyword::Var),
+            b"while" => Keyword(token::Keyword::While),
+            bytes => Type::Identifier(String::from_utf8(bytes.to_vec()).unwrap()),
+        }
+    }
+
     /// Advances the position and stops over the left quote.
     ///
     /// Should be called when the position is above the right quote.
@@ -133,19 +156,32 @@ impl Scanner<'_> {
         start+1..=end_inclusive-1  // Trims both quotes
     }
 
-    fn measure_number(&mut self) -> (bool, Range<usize>) {
+    fn measure_number(&mut self) -> (bool, RangeInclusive<usize>) {
         let mut is_float = false;
         let start = self.position;
         self.advance_until_not_ascii_digit();
         if !self.is_at_end() && &[self.current_byte()] == b"." {
-            self.advance();
+            self.advance();  // Skips the `.`
             self.advance_until_not_ascii_digit();
             is_float = true;
         }
-        let end_exclusive = self.position;
-        let range = start..end_exclusive;
+
+        self.position -= 1;  // `advance_until_not_ascii_digit` stops **after** the number
+        let end_inclusive = self.position;
+        let range = start..=end_inclusive;
 
         (is_float, range)
+    }
+
+    fn measure_word(&mut self) -> RangeInclusive<usize> {
+        let start = self.position;
+        while !self.is_at_end() && (self.current_byte().is_ascii_alphanumeric() || self.current_byte() == b'_') {
+            self.advance();
+        }
+        self.position -= 1;
+        let end = self.position;
+
+        start..=end
     }
 
     fn advance_until_not_ascii_digit(&mut self) {
@@ -153,19 +189,22 @@ impl Scanner<'_> {
             self.advance();
         }
     }
-}
 
-/// # Arguments
-/// * `compound_type`: (`type`, `byte`)
-///
-/// Returns `type` if `next_byte` is `byte`, otherwise returns `simple_type`
-fn decide_token_type(simple_type: Type, compound_type: (Type, &[u8]), next_byte: Option<&u8>) -> Type {
-    let expected_bytes = compound_type.1;
-    let compound_type = compound_type.0;
-    match next_byte {
-        Some(&byte) if &[byte] == expected_bytes => compound_type,
-        Some(_)
-        | None => simple_type,
+    /// # Arguments
+    /// * `compound_type`: (`type`, `byte`)
+    ///
+    /// Returns `type` if `next_byte` is `byte`, otherwise returns `simple_type`
+    fn decide_token_type(&mut self, simple_type: Type, compound_type: (Type, &[u8])) -> Type {
+        let expected_bytes = compound_type.1;
+        let compound_type = compound_type.0;
+        match self.next_byte() {
+            Some(&byte) if &[byte] == expected_bytes => {
+                self.advance();  // Skips the next character to avoid matching it again
+                compound_type
+            }
+            Some(_)
+            | None => simple_type,
+        }
     }
 }
 
@@ -378,26 +417,84 @@ mod tests {
         }
     }
 
-    mod integers {
+    mod numbers {
         use super::*;
 
-        #[test]
-        fn scans_lone_integers() {
-            let code = "123";
+        mod integers {
+            use super::*;
 
-            let tokens = Scanner::new(code).scan_tokens();
+            #[test]
+            fn scans_lone_integers() {
+                let code = "123";
 
-            assert_eq!(
-                tokens,
-                &[
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
-                ],
-            )
+                let tokens = Scanner::new(code).scan_tokens();
+
+                assert_eq!(
+                    tokens,
+                    &[
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
+                    ],
+                )
+            }
+
+            #[test]
+            fn scans_integers() {
+                let code = "0 + 123 - 1";
+
+                let tokens = Scanner::new(code).scan_tokens();
+
+                assert_eq!(
+                    tokens,
+                    &[
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
+                        Token { r#type: Plus },
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
+                        Token { r#type: Minus },
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(1)) },
+                    ],
+                )
+            }
+        }
+
+        mod floats {
+            use super::*;
+
+            #[test]
+            fn scans_lone_floats() {
+                let code = "12.3";
+
+                let tokens = Scanner::new(code).scan_tokens();
+
+                assert_eq!(
+                    tokens,
+                    &[
+                        Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
+                    ],
+                )
+            }
+
+            #[test]
+            fn scans_floats() {
+                let code = "0 + 12.3 / 5";
+
+                let tokens = Scanner::new(code).scan_tokens();
+
+                assert_eq!(
+                    tokens,
+                    &[
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
+                        Token { r#type: Plus },
+                        Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
+                        Token { r#type: Slash },
+                        Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
+                    ],
+                )
+            }
         }
 
         #[test]
-        fn scans_integers() {
-            let code = "0 + 123 - 1";
+        fn scans_numbers_without_whitespace() {
+            let code = "0+12.3!=5.77";
 
             let tokens = Scanner::new(code).scan_tokens();
 
@@ -406,45 +503,145 @@ mod tests {
                 &[
                     Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
                     Token { r#type: Plus },
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(123)) },
-                    Token { r#type: Minus },
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(1)) },
+                    Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
+                    Token { r#type: BangEqual },
+                    Token { r#type: NumberLiteral(NumberLiteral::Float(5.77)) },
                 ],
             )
         }
     }
 
-    mod floats {
+    mod keywords {
         use super::*;
 
         #[test]
-        fn scans_lone_floats() {
-            let code = "12.3";
+        fn scans_keywords() {
+            let code = r#"
+                and
+                class
+                else
+                false
+                for
+                fun
+                if
+                nil
+                or
+                print
+                return
+                super
+                this
+                true
+                var
+                while
+            "#;
 
             let tokens = Scanner::new(code).scan_tokens();
 
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
+                    Token { r#type: Keyword(Keyword::And) },
+                    Token { r#type: Keyword(Keyword::Class) },
+                    Token { r#type: Keyword(Keyword::Else) },
+                    Token { r#type: Keyword(Keyword::False) },
+                    Token { r#type: Keyword(Keyword::For) },
+                    Token { r#type: Keyword(Keyword::Fun) },
+                    Token { r#type: Keyword(Keyword::If) },
+                    Token { r#type: Keyword(Keyword::Nil) },
+                    Token { r#type: Keyword(Keyword::Or) },
+                    Token { r#type: Keyword(Keyword::Print) },
+                    Token { r#type: Keyword(Keyword::Return) },
+                    Token { r#type: Keyword(Keyword::Super) },
+                    Token { r#type: Keyword(Keyword::This) },
+                    Token { r#type: Keyword(Keyword::True) },
+                    Token { r#type: Keyword(Keyword::Var) },
+                    Token { r#type: Keyword(Keyword::While) },
                 ],
             )
         }
 
         #[test]
-        fn scans_floats() {
-            let code = "0 + 12.3 / 5";
+        fn scans_keywords_between_newlines() {
+            let code = "fun\nvar";
 
             let tokens = Scanner::new(code).scan_tokens();
 
             assert_eq!(
                 tokens,
                 &[
-                    Token { r#type: NumberLiteral(NumberLiteral::Integer(0)) },
-                    Token { r#type: Plus },
-                    Token { r#type: NumberLiteral(NumberLiteral::Float(12.3)) },
-                    Token { r#type: Slash },
+                    Token { r#type: Keyword(Keyword::Fun) },
+                    Token { r#type: Keyword(Keyword::Var) },
+                ],
+            )
+        }
+    }
+
+    mod identifiers {
+        use super::*;
+
+        #[test]
+        fn scans_identifiers() {
+            let code = "var fred = 5;";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Keyword(Keyword::Var) },
+                    Token { r#type: Identifier("fred".to_string()) },
+                    Token { r#type: Equal },
                     Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
+                    Token { r#type: Semicolon },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_identifiers_with_minimal_whitespace() {
+            let code = "var fred=5;";
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Keyword(Keyword::Var) },
+                    Token { r#type: Identifier("fred".to_string()) },
+                    Token { r#type: Equal },
+                    Token { r#type: NumberLiteral(NumberLiteral::Integer(5)) },
+                    Token { r#type: Semicolon },
+                ],
+            )
+        }
+
+        #[test]
+        fn scans_function_declaration() {
+            let code = r#"
+                fun foo_bar_1(x, y) {
+                    return x + y;
+                }
+            "#;
+
+            let tokens = Scanner::new(code).scan_tokens();
+
+            assert_eq!(
+                tokens,
+                &[
+                    Token { r#type: Keyword(Keyword::Fun) },
+                    Token { r#type: Identifier("foo_bar_1".to_string()) },
+                    Token { r#type: LeftParen },
+                    Token { r#type: Identifier("x".to_string()) },
+                    Token { r#type: Comma },
+                    Token { r#type: Identifier("y".to_string()) },
+                    Token { r#type: RightParen },
+                    Token { r#type: LeftBrace },
+                    Token { r#type: Keyword(Keyword::Return) },
+                    Token { r#type: Identifier("x".to_string()) },
+                    Token { r#type: Plus },
+                    Token { r#type: Identifier("y".to_string()) },
+                    Token { r#type: Semicolon },
+                    Token { r#type: RightBrace },
                 ],
             )
         }

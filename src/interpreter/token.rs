@@ -14,31 +14,6 @@ impl std::fmt::Debug for Token {
     }
 }
 
-impl Token {
-    pub fn is_compound(&self) -> bool {
-        match self.r#type {
-            Type::LeftParen
-            | Type::RightParen
-            | Type::LeftBrace
-            | Type::RightBrace
-            | Type::Comma
-            | Type::Dot
-            | Type::Minus
-            | Type::Plus
-            | Type::Semicolon
-            | Type::Star
-            | Type::Equal
-            | Type::Bang
-            | Type::Greater
-            | Type::Less
-            | Type::StringLiteral(_)            // Not exactly...
-            | Type::NumberLiteral(_) => false,  // Not exactly...
-
-            _ => true,
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub(crate) enum Type {
     LeftParen,
@@ -69,12 +44,35 @@ pub(crate) enum Type {
     NumberLiteral(NumberLiteral),
 
     Error(Error),
+
+    Keyword(Keyword),
+    Identifier(String),
 }
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum NumberLiteral {
     Integer(i32),
     Float(f64),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Keyword {
+    And,
+    Class,
+    Else,
+    False,
+    For,
+    Fun,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
 }
 
 #[derive(Debug, PartialEq)]
